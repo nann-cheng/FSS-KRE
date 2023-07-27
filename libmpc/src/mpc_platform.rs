@@ -1,23 +1,17 @@
 use std::io::Error;
-
-//use std::Arc::Arc;
-//use std::io::prelude::*;
-//use std::net::*;
-//use std::time::Duration;
 use super::mpc_party::*;
-//use super::channelmessage::*;
-//use futures::executor::block_on;
 use idpf::*;
 use idpf::prg::*;
-//use idpf::RingElm;
+use std::fs::File;
+use std::io::Write;
+use bincode::{serialize};
 use tokio::{
     io::{AsyncWriteExt, AsyncReadExt},
     net::{
         tcp::{OwnedReadHalf, OwnedWriteHalf},
         TcpListener, TcpStream,
     },
-    //task,
-    sync::mpsc
+    //task;
 };
 
 
@@ -68,7 +62,20 @@ impl MPCServer{
             }
             println!("");
         }
-        println!("Result = {:?}", result);
+        print!("cmp_share=");
+        for i in 0..result.len(){           
+            if result[i] == true{
+                print!("1");
+            }
+            else {
+                print!("0");
+            }
+        }
+        println!("");
+        let mut f_x = File::create("../test/x1.bin").expect("create failed");
+        let mut f_cmp = File::create("../test/cmp1.bin").expect("create failed");
+        f_x.write_all(&bincode::serialize(&x_share).expect("Serialize q-bool-share error")).expect("Write q-bool-share error.");
+        f_cmp.write_all(&bincode::serialize(&result).expect("Serialize q-bool-share error")).expect("Write q-bool-share error.");
         Result::Ok(())
     }
 }
@@ -117,7 +124,20 @@ impl MPCClient{
             }
             println!("");
         }
-        println!("Result = {:?}", result);
+        print!("cmp_share=");       
+        for i in 0..result.len(){           
+            if result[i] == true{
+                print!("1");
+            }
+            else {
+                print!("0");
+            }
+        }
+
+        let mut f_x = File::create("../test/x0.bin").expect("create failed");
+        let mut f_cmp = File::create("../test/cmp0.bin").expect("create failed");
+        f_x.write_all(&bincode::serialize(&x_share).expect("Serialize q-bool-share error")).expect("Write q-bool-share error.");
+        f_cmp.write_all(&bincode::serialize(&result).expect("Serialize q-bool-share error")).expect("Write q-bool-share error.");
         Result::Ok(())
     }
 }
