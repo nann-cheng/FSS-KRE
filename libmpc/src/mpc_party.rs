@@ -3,6 +3,10 @@ use idpf::*;
 use idpf::beavertuple::BeaverTuple;
 use idpf::dpf::*;
 use idpf::RingElm;
+use tokio::io::AsyncReadExt;
+use tokio::io::AsyncWriteExt;
+use tokio::net::tcp::OwnedReadHalf;
+use tokio::net::tcp::OwnedWriteHalf;
 use std::path::PathBuf;
 use futures::executor::block_on;
 use tokio::sync::mpsc;
@@ -193,11 +197,13 @@ impl MPCParty{
     //msg_recv
 }*/
 
-pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, msg_ty: &mpsc::Sender<Vec<u8>>, msg_rx: &mut mpsc::Receiver<Vec<u8>>)->Vec<bool>{
+//pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, msg_ty: &mpsc::Sender<Vec<u8>>, msg_rx: &mut mpsc::Receiver<Vec<u8>>)->Vec<bool>{
+pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mut writer: OwnedWriteHalf)->Vec<bool>{
     println!("Start!");
     let m = p.m;
     let n = p.n;
     println!("m={}, n={}", m, n);
+    let mut readerbuf: [u8; 1024] = [0; 1024]; 
     let mut mask_bits = Vec::<bool>::new(); //t in the paper, it is a bit vector of length n
     //let mut prefix_bits = vec![false;m*n]; // m bit vector whose length is n
     let mut cmp_bits = vec![false;n]; // the current prefix that has been checked
@@ -219,14 +225,34 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, msg_ty: &mpsc::Sender<Vec<u8>
     /*Line 3: The reveal function for a bunch of bool data*/ 
     let t = {
         let vc_0:Vec<u8> = mask_bits.iter().map(|x| if *x == true {1} else {0}).collect(); // convert the bool vec to u8 vec such that the message can be convoyed in the channel
+        
+        let len_ex = vc_0.len();
         println!("Start Exchange1");
+        let exchange_bool_vec = {
+            if let Err(err) = writer.write_all(&vc_0.as_slice()).await{
+                eprintln!("Write to partner failed:{}", err);
+                std::process::exit(-1);
+            }
+            else{
+                println!("Write to partner {} bytes.", len_ex);
+            }
 
-        let f1 = msg_ty.send(vc_0.clone()).await;
-        let f2 = msg_rx.recv().await;
-        let vc_1 = f2.unwrap();
-        //let vc_1 = block_on(exchange_message(msg_ty, msg_rx, &vc_0));
-        //let vc_1 = exchange_message(msg_ty, msg_rx, &vc_0).await;
+            match  reader.read_exact(&mut readerbuf[0..len_ex]).await{
+                Err(e) => {
+                    eprintln!("read from client error: {}", e);
+                    std::process::exit(-1);
+                }
+                Ok(len_ex) => {
+                    println!("Receive {} bytes from partner.", len_ex);
+                }
+                Ok(n) => {
+                    println!("client closed or other errors.");
+                    std::process::exit(-1);
+                }// 遇到了EOF     
+            }     
+        };
         println!("End Exchange1");
+        let vc_1 = readerbuf[0..len_ex].to_vec();
         let share0 = ChannelMessage::to_boolvec_type(vc_0).unwrap();
         let share1 = ChannelMessage::to_boolvec_type(vc_1).unwrap();
         let r = f_reconstrct(&share0, &share1);
@@ -315,11 +341,33 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, msg_ty: &mpsc::Sender<Vec<u8>
         let buf1 = x_msg1.to_bytes();
         //let buf2 = block_on(exchange_message(msg_ty, msg_rx, &buf1));
         println!("Start Exchange ring elememts {}", i);
-        let _ = msg_ty.send(buf1.clone()).await;
-        let buf2 = msg_rx.recv().await.unwrap();
-        let x_msg2 = ChannelMessage::to_ringvec_type(buf2).unwrap();
-        let x_msg = f_reconstrct(&x_msg1, &x_msg2).unwrap();
+        let len_ex = buf1.len();
+        let exchange_rings = {
+            if let Err(err) = writer.write_all(&&buf1.as_slice()).await{
+                eprintln!("Write to partner failed:{}", err);
+                std::process::exit(-1);
+            }
+            else{
+                println!("Write to partner {} bytes.", len_ex);
+            }
+
+            match  reader.read_exact(&mut readerbuf[0..len_ex]).await{
+                Err(e) => {
+                    eprintln!("read from client error: {}", e);
+                    std::process::exit(-1);
+                }
+                Ok(len_ex) => {
+                    println!("Receive {} bytes from partner.", len_ex);
+                }
+                Ok(n) => {
+                    println!("client closed or other errors.");
+                    std::process::exit(-1);
+                }// 遇到了EOF     
+            }     
+        };
         println!("End Exchange ring elememts {}", i);
+        let x_msg2 = ChannelMessage::to_ringvec_type(readerbuf[0..len_ex].to_vec()).unwrap();
+        let x_msg = f_reconstrct(&x_msg1, &x_msg2).unwrap();
         let (x_fznc, d1, d2, e1, e2);
         let omega_t;
         println!("Step 4-1-{}", i);
@@ -416,10 +464,33 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, msg_ty: &mpsc::Sender<Vec<u8>
         let msg1 = ChannelMessage::BoolData(simga_share);
         let buf1 = msg1.to_bytes();
         println!("Start Reveal sigma {}, need exchange 1 bool value", i);
-        let _ = msg_ty.send(buf1.clone()).await;
-        let buf2 = msg_rx.recv().await.unwrap();
-        
+    
+        let len_ex = buf1.len();
+        let exchange_rings = {
+            if let Err(err) = writer.write_all(&&buf1.as_slice()).await{
+                eprintln!("Write to partner failed:{}", err);
+                std::process::exit(-1);
+            }
+            else{
+                println!("Write to partner {} bytes.", len_ex);
+            }
+
+            match  reader.read_exact(&mut readerbuf[0..len_ex]).await{
+                Err(e) => {
+                    eprintln!("read from client error: {}", e);
+                    std::process::exit(-1);
+                }
+                Ok(len_ex) => {
+                    println!("Receive {} bytes from partner.", len_ex);
+                }
+                Ok(n) => {
+                    println!("client closed or other errors.");
+                    std::process::exit(-1);
+                }// 遇到了EOF     
+            }     
+        };
         //let buf2 = block_on(exchange_message(msg_ty, msg_rx, &buf1));
+        let buf2 = readerbuf[0..len_ex].to_vec();
         let msg2 = ChannelMessage::to_bool_type(buf2).unwrap();
         let r_msg = f_reconstrct(&msg1, &msg2).unwrap();
         let sigma = match r_msg{

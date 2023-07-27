@@ -54,41 +54,21 @@ impl MPCServer{
         println!("Listening...");
         let (c, _addr) = self.s.as_ref().unwrap().accept().await.unwrap();
         let (r, w) = c.into_split();
-        let channel_x = mpsc::channel::<Vec<u8>>(1024); //The channel between main job and the writer
-        let channel_y = mpsc::channel::<Vec<u8>>(1024); //The channel between main job and the reader
-        let msg_tx = channel_x.0;
-        let mut msg_rx = channel_x.1;
-        let msg_ty = channel_y.0;
-        let mut msg_ry = channel_y.1;
 
-        let mut read_task = tokio::spawn(async move {
-            read_from_partner(r,  &msg_tx).await;
-        });
-    
-        let mut write_task = tokio::spawn(async move {
-            write_to_partner(w, &mut msg_ry).await;
-        });
-    
-        let mut main_task = tokio::spawn(async move {
-            max(&p, &x_share,&msg_ty, &mut msg_rx).await;
-        });
-
-        let res = tokio::try_join!(&mut read_task, &mut write_task, &mut main_task);
-        /*if tokio::try_join!(&mut read_task, &mut write_task, &mut main_task).is_err() {
-            eprintln!("read_task/write_task terminated");
-            main_task.abort();
-            read_task.abort();
-            write_task.abort();
-        };*/
-        if res.is_err(){
-            eprintln!("read_task/write_task terminated");
-            main_task.abort();
-            read_task.abort();
-            write_task.abort();
+        let result = max(&p, &x_share, r, w).await;
+        for i in 0..INPUT_SIZE{
+            print!("x_share[{}]=", i);
+            for j in 0..INPUT_BITS{
+                if x_share[i*INPUT_BITS+j] == true{
+                    print!("1");
+                }
+                else {
+                    print!("0");
+                }
+            }
+            println!("");
         }
-        else{
-            println!("{:?}", res.unwrap().2);
-        }
+        println!("Result = {:?}", result);
         Result::Ok(())
     }
 }
@@ -123,51 +103,31 @@ impl MPCClient{
         p.setup(&config, INPUT_SIZE, INPUT_BITS);
         let s = TcpStream::connect("127.0.0.1:8888").await?;
         let (r, w) = s.into_split();
-        let channel_x = mpsc::channel::<Vec<u8>>(1024); //The channel between main job and the writer
-        let channel_y = mpsc::channel::<Vec<u8>>(1024); //The channel between main job and the reader
-        let msg_tx = channel_x.0;
-        let mut msg_rx = channel_x.1;
-        let msg_ty = channel_y.0;
-        let mut msg_ry = channel_y.1;
-
-        let mut read_task = tokio::spawn(async move {
-            read_from_partner(r,  &msg_tx).await;
-        });
-    
-        let mut write_task = tokio::spawn(async move {
-            write_to_partner(w, &mut msg_ry).await;
-        });
-    
-        let mut main_task = tokio::spawn(async move {
-            max(&p, &x_share, &msg_ty, &mut msg_rx).await;
-        });
-
-        let res = tokio::try_join!(&mut read_task, &mut write_task, &mut main_task);
-        /*if tokio::try_join!(&mut read_task, &mut write_task).is_err() {
-            eprintln!("read_task/write_task terminated");
-            main_task.abort();
-            read_task.abort();
-            write_task.abort();
-        };*/
-        if res.is_err(){
-            eprintln!("read_task/write_task terminated");
-            main_task.abort();
-            read_task.abort();
-            write_task.abort();
+       
+        let result = max(&p, &x_share, r, w).await;
+        for i in 0..INPUT_SIZE{
+            print!("x_share[{}]=", i);
+            for j in 0..INPUT_BITS{
+                if x_share[i*INPUT_BITS+j] == true{
+                    print!("1");
+                }
+                else {
+                    print!("0");
+                }
+            }
+            println!("");
         }
-        else {
-            println!("{:?}", res.unwrap().2);
-        }
+        println!("Result = {:?}", result);
         Result::Ok(())
     }
 }
 
-async fn read_from_partner(reader: OwnedReadHalf, msg_tx: &mpsc::Sender<Vec<u8>>){
+/*async fn read_from_partner(reader: OwnedReadHalf, msg_tx: &mpsc::Sender<Vec<u8>>){
     let mut buf_reader = tokio::io::BufReader::new(reader);
     let mut buf= [0; 1024];
     //let mut buf = Vec::<u8>::new();
     loop {
-        match  buf_reader.read(&mut buf).await{
+        match  buf_reader.read(&mut buf[0..10]).await{
             Err(e) => {
                 eprintln!("read from client error: {}", e);
                 break;
@@ -199,4 +159,4 @@ async fn write_to_partner(mut writer: OwnedWriteHalf, msg_rx:&mut mpsc::Receiver
             break;
         }
     }
-}
+}*/
