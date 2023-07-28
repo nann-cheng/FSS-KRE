@@ -58,6 +58,8 @@ fn setup(input_size:usize, input_bits:usize) {
     f_qb0.write_all(&bincode::serialize(&q_boolean_0).expect("Serialize q-bool-share error")).expect("Write q-bool-share error.");
     f_qb1.write_all(&bincode::serialize(&q_boolean_1).expect("Serialize q-bool-share error")).expect("Write q-bool-share error.");
 
+
+
     let mut q_numeric = Vec::new();
     let mut q_numeric_0 = Vec::new();
     let mut q_numeric_1 = Vec::new();
@@ -87,6 +89,13 @@ fn setup(input_size:usize, input_bits:usize) {
         let zero_r_bits = stream.next_bits(NUMERIC_LEN*2);
 
         let mut numeric_zero_r_1 = RingElm::from( bits_to_u32(&zero_r_bits[..NUMERIC_LEN]) );
+        let numeric_zero_r = RingElm::from( bits_to_u32(&zero_r_bits[..NUMERIC_LEN]) );
+
+        // println!("numeric_zero_r={:?}", numeric_zero_r);
+
+        // println!("Vec<bool>: {:?}", zero_r_bits[..NUMERIC_LEN].to_vec());
+
+
 
         let numeric_zero_r_0 =RingElm::from( bits_to_u32(&zero_r_bits[NUMERIC_LEN..]) );
         numeric_zero_r_1.sub(&numeric_zero_r_0);
@@ -95,6 +104,20 @@ fn setup(input_size:usize, input_bits:usize) {
         let zero_betas = RingElm::from(1u32).to_vec(NUMERIC_LEN);
 
         let (k0, k1) = DPFKey::gen(&zero_r_bits[..NUMERIC_LEN], &zero_betas);
+
+        // let partial_data: Vec<bool> = zero_r_bits[..NUMERIC_LEN].to_vec();
+
+        // let k0Clone = k0.clone();
+        // let k1Clone = k1.clone();
+
+        // let y_fnzc0: RingElm = k0Clone.eval(&partial_data);
+        // println!("y_fnzc0={:?}", y_fnzc0);
+        // let mut y_fnzc1: RingElm = k1Clone.eval(&partial_data);
+        // println!("y_fnzc1={:?}", y_fnzc1);
+
+        // y_fnzc1.add(&y_fnzc0);
+        // println!("y_fnzc={:?}", y_fnzc1);
+
         zero_dpf_0.push(k0);
         zero_dpf_1.push(k1);
 
@@ -162,6 +185,7 @@ fn setup(input_size:usize, input_bits:usize) {
 
 fn main()
 {
+    // setup(3, 5);
     setup(10, 32);
 }
 
@@ -337,5 +361,8 @@ mod tests {
             assert_eq!(ab, c);
         }
     }
+    
+    
+
 }
 

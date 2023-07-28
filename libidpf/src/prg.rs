@@ -87,6 +87,12 @@ impl PrgSeed {
         }
     }
 
+    pub fn one() -> PrgSeed {
+        PrgSeed {
+            key: [1; AES_KEY_SIZE],
+        }
+    }
+
     pub fn random() -> PrgSeed {
         let mut key: [u8; AES_KEY_SIZE] = [0; AES_KEY_SIZE];
         rand::thread_rng().fill(&mut key);

@@ -255,38 +255,38 @@ where
 
 #[cfg(test)]
 mod tests {
-    /*use super::*;
-    use crate::ring::*;
-    use crate::Group;
+    // use super::*;
+    // use crate::ring::*;
+    // use crate::Group;
 
-    #[test]
-    fn verify() {
-        let nbits = 3usize;
-        let alpha = crate::u32_to_bits(nbits, 7);
+    // #[test]
+    // fn verify() {
+    //     let nbits = 3usize;
+    //     let alpha = crate::u32_to_bits(nbits, 7);
 
-        let values = FieldElm::from(1u32).to_vec(nbits);
+    //     let values = FieldElm::from(1u32).to_vec(nbits);
 
-        let (dpf_key0, dpf_key1) = DPFKey::gen(&alpha, &values);
+    //     let (dpf_key0, dpf_key1) = DPFKey::gen(&alpha, &values);
 
-        let mut state0 = dpf_key0.eval_init();
-        let mut state1 = dpf_key1.eval_init();
+    //     let mut state0 = dpf_key0.eval_init();
+    //     let mut state1 = dpf_key1.eval_init();
 
-        let testNumber = crate::u32_to_bits(nbits, 7);
+    //     let testNumber = crate::u32_to_bits(nbits, 7);
 
-        //Prefix trial test
-        for i in 0..nbits{
-            let bit = testNumber[i];
-            let (state_new0, word0) = dpf_key0.eval_bit(&state0, bit);
-            state0 = state_new0;
+    //     //Prefix trial test
+    //     for i in 0..nbits{
+    //         let bit = testNumber[i];
+    //         let (state_new0, word0) = dpf_key0.eval_bit(&state0, bit);
+    //         state0 = state_new0;
 
-            let (state_new1, word1) = dpf_key1.eval_bit(&state1, bit);
-            state1 = state_new1;
+    //         let (state_new1, word1) = dpf_key1.eval_bit(&state1, bit);
+    //         state1 = state_new1;
 
-            let mut sum = FieldElm::zero();
-            sum.add(&word0);
-            sum.add(&word1);
+    //         let mut sum = FieldElm::zero();
+    //         sum.add(&word0);
+    //         sum.add(&word1);
 
-            assert_eq!(sum, values[i]);
-        }
-    }*/
+    //         assert_eq!(sum, values[i]);
+    //     }
+    // }
 }

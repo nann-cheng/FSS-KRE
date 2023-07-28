@@ -88,7 +88,7 @@ pub fn u32_to_bits(nbits: usize, input: u32) -> Vec<bool> {
         out.push(bit);
     }
 
-    // out.reverse()
+    out.reverse();
     
     out
 }

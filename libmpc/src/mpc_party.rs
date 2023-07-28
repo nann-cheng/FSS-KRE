@@ -179,7 +179,7 @@ impl MPCParty{
         self.m = input_size;
         self.n = input_bits;
     }
-} 
+}
 
 /*async fn exchange_message(msg_ty: &mpsc::Sender<Vec<u8>>, msg_rx: &mut mpsc::Receiver<Vec<u8>>, msg: &Vec<u8>)->Vec<u8>  
 {
@@ -198,7 +198,7 @@ impl MPCParty{
 //pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, msg_ty: &mpsc::Sender<Vec<u8>>, msg_rx: &mut mpsc::Receiver<Vec<u8>>)->Vec<bool>{
 pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mut writer: OwnedWriteHalf)->Vec<bool>{
     println!("Start!");
-    let m = p.m;
+    let m: usize = p.m;
     let n = p.n;
     
     let mut readerbuf: [u8; 1024] = [0; 1024]; 
@@ -286,8 +286,8 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
     
     //Online-step-3. Start bit-by-bit prefix query, from Line7
     for i in 0..n{
-        println!("***************start the {} iteration***************", i);
-        println!("qb[{}]={}", i, p.offlinedata.qb_share[i]);
+        // println!("***************start the {} iteration***************", i);
+        // println!("qb[{}]={}", i, p.offlinedata.qb_share[i]);
         let mut mu_share = RingElm::zero();
         for j in 0..m{
             let new_bit = t[j*n+i]; //x[j][i]
@@ -296,12 +296,12 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
             new_state[j] = state_new; 
         }
         /*mu is the number of elements having the prefix p_{i-1} || q[i] */
-        println!("mu={:?}", mu_share);
+        // println!("mu={:?}", mu_share);
         let v0_share = mu_share.clone(); //Line 13, the number of elements having the prerix p_{i-1} || q[i]
         let mut v1_share = v_share.clone();
         v1_share.sub(&mu_share); // Line 14, the number of elements having prefix p_{i-1} || ~q[i]
         let v_share_t = (v0_share.clone(), v1_share.clone());
-        println!("v0={:?}, v1={:?}", v0_share, v1_share);
+        // println!("v0={:?}, v1={:?}", v0_share, v1_share);
         
         /*Exchange five ring_elements in parallel: u_i-w_i-alpha[i], (d_share, e_share) tuples for the two multiplication operation */
         let mut msg1 = Vec::<RingElm>::new(); // the send message
@@ -364,7 +364,7 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
                 std::process::exit(-1);
             }
             else{
-                println!("Write to partner {} bytes.", len_ex);
+                // println!("Write to partner {} bytes.", len_ex);
             }
 
             match  reader.read_exact(&mut readerbuf[0..len_ex]).await{
@@ -377,7 +377,7 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
                     std::process::exit(-1);
                 }// 遇到了EOF     
                 Ok(n) => {
-                    println!("Receive {} bytes from partner.", n);
+                    // println!("Receive {} bytes from partner.", n);
                 }// 遇到了EOF     
             }     
         };
@@ -386,7 +386,7 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
         let x_msg = f_reconstrct(&x_msg1, &x_msg2).unwrap();
         let (x_fznc, d1, d2, e1, e2);
         let omega_t;
-        println!("Step 4-1-{}", i);
+        // println!("Step 4-1-{}", i);
         if i < n-1{ //Decode x_msg to 5 ring elements 
             match x_msg{
                 ChannelMessage::RingVec(rv) => {
@@ -438,7 +438,7 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
             omega1.add(&omega1_2);
             omega1.add(&omega1_3); //compute w_1
 
-            println!("wo={:?}, w1={:?}", omega0, omega1);
+            // println!("wo={:?}, w1={:?}", omega0, omega1);
             omega_t = (omega0, omega1);  
         } //end if i < n-1
         else{
@@ -471,16 +471,26 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
             Some(numeric) => vec_eval = u32_to_bits(NUMERIC_LEN,numeric),
             None      => println!( "u32 Conversion failed!!" ),
         }
-        let y_fnzc = p.offlinedata.zc_k_share[i].eval(&vec_eval);
-        cmp_bits[i] = y_fnzc.to_u32().unwrap() & 0x1u32 == 0x1u32; //mod 2, convert RingElem to u32, then to bool
-        println!("cmp[{}]={}", i, cmp_bits[i]);
+
+        // println!("Vec<bool>: {:?}", vec_eval);
+
+        let y_fnzc: RingElm = p.offlinedata.zc_k_share[i].eval(&vec_eval);
+        // println!("y_fnzc={:?}", y_fnzc);
+
+        cmp_bits[i] = (y_fnzc.to_u32().unwrap() & 0x1u32) == 0x1u32; //mod 2, convert RingElem to u32, then to bool
+        match p.role{
+            PartyRole::Active => cmp_bits[i] = !cmp_bits[i],
+            PartyRole::Passitive => {} 
+        }
+        // println!("cmp[{}]={}", i, cmp_bits[i]);
+
         //end Line 12 
 
         /*Line 19 */
         let simga_share = cmp_bits[i] ^ p.offlinedata.qb_share[i];
         let msg1 = ChannelMessage::BoolData(simga_share);
         let buf1 = msg1.to_bytes();
-        println!("Start Reveal sigma {}, need exchange 1 bool value", i);
+        // println!("Start Reveal sigma {}, need exchange 1 bool value", i);
     
         let len_ex = buf1.len();
         let exchange_bit = {
@@ -489,7 +499,7 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
                 std::process::exit(-1);
             }
             else{
-                println!("Write to partner {} bytes.", len_ex);
+                // println!("Write to partner {} bytes.", len_ex);
             }
 
             match  reader.read_exact(&mut readerbuf[0..len_ex]).await{
@@ -502,7 +512,7 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
                     std::process::exit(-1);
                 }// 遇到了EOF     
                 Ok(n) => {
-                    println!("Receive {} bytes from partner.", n);
+                    // println!("Receive {} bytes from partner.", n);
                 }
             }
         };
@@ -514,10 +524,10 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
             ChannelMessage::BoolData(b) => {b}
             _ =>{false}
         };
-        println!("End Reveal sigma {}", i);
-        println!("sigma_{}={}", i, sigma);
+        // println!("End Reveal sigma {}", i);
+        // println!("sigma_{}={}", i, sigma);
         /*Line 20-21 */
-        if sigma == true{
+        if sigma {
             v_share = v_share_t.1;
             omega_share = omega_t.1;
         }
@@ -527,15 +537,15 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
         }
 
          /*Line 22 update the m idpf if sigma == 1, it means a wrong q[i] is choosed*/
-        if sigma == true{
+        if sigma {
             for j in 0..m{
-                let eval_bit = !t[j*m+i]; //choose the oppsite value x[j][i]
+                let eval_bit = !t[j*n+i]; //choose the oppsite value x[j][i]
                 let (state_new, _) = p.offlinedata.k_share[j].eval_bit(&old_state[j], eval_bit);
                 new_state[j] = state_new;
             }
         }
         old_state = new_state.clone(); //update the state
-        println!("***************end the {} iteration***************", i);
+        // println!("***************end the {} iteration***************", i);
     }
     cmp_bits
        

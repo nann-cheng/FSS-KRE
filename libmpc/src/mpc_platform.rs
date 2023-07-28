@@ -25,9 +25,11 @@ impl MPCServer{
     }
 
     pub async fn start(&mut self, addr: &str)->Result<(), Error>{
-        let seed = PrgSeed::random();
+        // let seed = PrgSeed::random();
+        let seed = PrgSeed::zero();
         let mut stream = FixedKeyPrgStream::new();
         stream.set_key(&seed.key);
+
         let x_share = stream.next_bits(INPUT_BITS*INPUT_SIZE);
         let config = FileConfig{
             dir_path: "../data",
@@ -90,10 +92,20 @@ impl MPCClient{
     }
 
     pub async fn start(&mut self, addr: &str)->Result<(), Error>{
-        let seed = PrgSeed::random();
+        // let seed = PrgSeed::random();
+        let seed = PrgSeed::one();
         let mut stream = FixedKeyPrgStream::new();
         stream.set_key(&seed.key);
+
+
         let x_share = stream.next_bits(INPUT_BITS*INPUT_SIZE);
+        //------------- Debug-----------------
+        // let mut f = File::open("../data/xb1.bin").expect("Open file failed");
+        // let mut buf = Vec::<u8>::new();
+        // f.read_to_end(&mut buf).expect("Read file error!");
+        // let x_share = bincode::deserialize(&buf).expect("Deserialize key-share Error");
+        //------------- Debug-----------------
+
         let config = FileConfig{
             dir_path: "../data",
             a_file: "a1.bin",
