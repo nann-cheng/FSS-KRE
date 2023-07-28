@@ -8,8 +8,6 @@ use tokio::io::AsyncWriteExt;
 use tokio::net::tcp::OwnedReadHalf;
 use tokio::net::tcp::OwnedWriteHalf;
 use std::path::PathBuf;
-use futures::executor::block_on;
-use tokio::sync::mpsc;
 use bincode::Error;
 use std::fs::File;
 use std::io::prelude::*;
@@ -202,7 +200,7 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
     println!("Start!");
     let m = p.m;
     let n = p.n;
-    println!("m={}, n={}", m, n);
+    
     let mut readerbuf: [u8; 1024] = [0; 1024]; 
     let mut mask_bits = Vec::<bool>::new(); //t in the paper, it is a bit vector of length n
     //let mut prefix_bits = vec![false;m*n]; // m bit vector whose length is n
@@ -217,11 +215,11 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
         old_state.push(init_state.clone()); // Line2
         new_state.push(init_state.clone()); 
         for j in 0..n{
-            let t_share = x_bits[i*n + j] ^ p.offlinedata.a_share[i*n + j] ^ p.offlinedata.qb_share[i]; //x[i][j]
+            let t_share = x_bits[i*n + j] ^ p.offlinedata.a_share[i*n + j] ^ p.offlinedata.qb_share[j]; //x[i][j]^qb[j]
             mask_bits.push(t_share);
         }        
     }
-    println!("Step2!");
+   
     /*Line 3: The reveal function for a bunch of bool data*/ 
     let t = {
         let vc_0:Vec<u8> = mask_bits.iter().map(|x| if *x == true {1} else {0}).collect(); // convert the bool vec to u8 vec such that the message can be convoyed in the channel
@@ -242,13 +240,13 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
                     eprintln!("read from client error: {}", e);
                     std::process::exit(-1);
                 }
-                Ok(len_ex) => {
-                    println!("Receive {} bytes from partner.", len_ex);
-                }
-                Ok(n) => {
-                    println!("client closed or other errors.");
+                Ok(0) => {
+                    println!("client closed.");
                     std::process::exit(-1);
                 }// 遇到了EOF     
+                Ok(n) => {
+                    println!("Receive {} bytes from partner.", n);
+                }        
             }     
         };
         println!("End Exchange1");
@@ -263,27 +261,33 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
             Vec::<bool>::new()
         }
      };
-     println!("Step3: t.len = {}", t.len());
+     
     /*Line5-6: v is the number of elements whose prefix is p_{i-1} */
-    let mut v_share; 
+    let mut v_share;
+    let mut one_share;
     match p.role{
-        PartyRole::Active => v_share = RingElm::from(m as u32),
-        _ => v_share = RingElm::from(0)
-    }
+        PartyRole::Active => {v_share = RingElm::from(m as u32);
+            one_share = RingElm::from(1);
+        }
+        _ => {
+            v_share = RingElm::from(0);
+            one_share = RingElm::from(0);
+        }
+    } //line5
     let mut omega_share = {
-        let mut ring_unit = RingElm::from(1);
         let ring_m = RingElm::from(m as u32);
         
-        ring_unit.sub(&p.offlinedata.qa_share[0]);
-        ring_unit.mul(&ring_m);
-        ring_unit   
+        one_share.sub(&p.offlinedata.qa_share[0]);
+        one_share.mul(&ring_m);
+        one_share   
     }; // Line6
-    
+    println!("v = {}, omega = {}", v_share.to_u32().unwrap(), omega_share.to_u32().unwrap());
     let mut beavers = p.offlinedata.beavers.iter();
     
     //Online-step-3. Start bit-by-bit prefix query, from Line7
     for i in 0..n{
         println!("***************start the {} iteration***************", i);
+        println!("qb[{}]={}", i, p.offlinedata.qb_share[i]);
         let mut mu_share = RingElm::zero();
         for j in 0..m{
             let new_bit = t[j*n+i]; //x[j][i]
@@ -292,11 +296,13 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
             new_state[j] = state_new; 
         }
         /*mu is the number of elements having the prefix p_{i-1} || q[i] */
-        
+        println!("mu={:?}", mu_share);
         let v0_share = mu_share.clone(); //Line 13, the number of elements having the prerix p_{i-1} || q[i]
         let mut v1_share = v_share.clone();
         v1_share.sub(&mu_share); // Line 14, the number of elements having prefix p_{i-1} || ~q[i]
         let v_share_t = (v0_share.clone(), v1_share.clone());
+        println!("v0={:?}, v1={:?}", v0_share, v1_share);
+        
         /*Exchange five ring_elements in parallel: u_i-w_i-alpha[i], (d_share, e_share) tuples for the two multiplication operation */
         let mut msg1 = Vec::<RingElm>::new(); // the send message
         let mut x_fnzc_share = RingElm::from(0);  //
@@ -316,8 +322,18 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
         let bt2 = beaver2.unwrap();
         let mut d1_share= v0_share.clone(); //the fisrt v_alpha = v0_share 
         let mut d2_share= v1_share.clone(); //the second v_alpha = v0_share 
-        let mut e1_share = RingElm::from(1); //the fisrt v_beta = 1-q[i+1] 
-        let mut e2_share = RingElm::from(1); //the second v_beta = 1-q[i+1]
+        let mut e1_share;
+        match p.role{
+            PartyRole::Active => e1_share = RingElm::from(1),
+            PartyRole::Passitive => e1_share = RingElm::from(0) 
+        } //the fisrt v_beta = 1-q[i+1] 
+
+        let mut e2_share;
+        match p.role{
+            PartyRole::Active => e2_share = RingElm::from(1),
+            PartyRole::Passitive => e2_share = RingElm::from(0) 
+        } //the second v_beta = 1-q[i+1]
+
         if i < n-1{
             /* local comupute v_alpha-a for the two multiple operatios */
             d1_share.sub(&bt1.a);
@@ -340,7 +356,7 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
         let x_msg1 = ChannelMessage::RingVec(msg1);
         let buf1 = x_msg1.to_bytes();
         //let buf2 = block_on(exchange_message(msg_ty, msg_rx, &buf1));
-        println!("Start Exchange ring elememts {}", i);
+
         let len_ex = buf1.len();
         let exchange_rings = {
             if let Err(err) = writer.write_all(&&buf1.as_slice()).await{
@@ -356,16 +372,16 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
                     eprintln!("read from client error: {}", e);
                     std::process::exit(-1);
                 }
-                Ok(len_ex) => {
-                    println!("Receive {} bytes from partner.", len_ex);
-                }
-                Ok(n) => {
-                    println!("client closed or other errors.");
+                Ok(0) => {
+                    println!("client closed.");
                     std::process::exit(-1);
+                }// 遇到了EOF     
+                Ok(n) => {
+                    println!("Receive {} bytes from partner.", n);
                 }// 遇到了EOF     
             }     
         };
-        println!("End Exchange ring elememts {}", i);
+        
         let x_msg2 = ChannelMessage::to_ringvec_type(readerbuf[0..len_ex].to_vec()).unwrap();
         let x_msg = f_reconstrct(&x_msg1, &x_msg2).unwrap();
         let (x_fznc, d1, d2, e1, e2);
@@ -394,36 +410,37 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
             //Now, x_fnzc, d1, d2, e1, e2 have been reconstructed and decoded
             //Line 15-18: Calculate omega0 and omega1 
            
-            let mut omega0 = bt1.ab.clone();
+            let mut omega0 = bt1.ab.clone(); //[c]
             let mut omega0_1;
             match p.role{
                 PartyRole::Active => {omega0_1 = RingElm::from(0)},
                 PartyRole::Passitive=>{omega0_1 = d1.clone(); omega0_1.mul(&e1);}
-            }
+            } //[d*e]
             let mut omega0_2 = d1.clone();
-            omega0_2.mul(&bt1.b);
+            omega0_2.mul(&bt1.b); //d*[b] 
             let mut omega0_3 = e1.clone();
-            omega0_3.mul(&bt1.a);
-            omega0.add(&omega0_1);
+            omega0_3.mul(&bt1.a); //e*[a]
+            omega0.add(&omega0_1); 
             omega0.add(&omega0_2);
-            omega0.add(&omega0_3);
+            omega0.add(&omega0_3); //[de] + d[b] + e[a] + [c]
 
-            let mut omega1 = bt2.ab.clone();
+            let mut omega1 = bt2.ab.clone(); //[c]
             let mut omega1_1;
             match p.role{
                 PartyRole::Active => {omega1_1 = RingElm::from(0)},
-                PartyRole::Passitive=>{omega1_1 = d1.clone(); omega1_1.mul(&e1);}
-            }
+                PartyRole::Passitive=>{omega1_1 = d2.clone(); omega1_1.mul(&e2);}
+            } //[de]
             let mut omega1_2 = d2.clone();
-            omega1_2.mul(&bt2.b);
+            omega1_2.mul(&bt2.b); //d2*[b]
             let mut omega1_3 = e2.clone();
-            omega1_3.mul(&bt2.a);
+            omega1_3.mul(&bt2.a); //e2*[a]
             omega1.add(&omega1_1);
             omega1.add(&omega1_2);
-            omega1.add(&omega1_3);
-            
+            omega1.add(&omega1_3); //compute w_1
+
+            println!("wo={:?}, w1={:?}", omega0, omega1);
             omega_t = (omega0, omega1);  
-        } //end if i < n
+        } //end if i < n-1
         else{
             match x_msg{
                 ChannelMessage::RingVec(rv) => {
@@ -446,10 +463,9 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
             }
             omega_t = (RingElm::from(0), RingElm::from(0));    
        } //end else if i < n-1
-       println!("Step 4-2-{}", i);
+       
         //start Line 12, calculate the f_{NonZeroCheck}(x_fnzc)
         let mut vec_eval = vec![false;NUMERIC_LEN];
-
         let num_eval = x_fznc.to_u32();
         match num_eval {
             Some(numeric) => vec_eval = u32_to_bits(NUMERIC_LEN,numeric),
@@ -457,6 +473,7 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
         }
         let y_fnzc = p.offlinedata.zc_k_share[i].eval(&vec_eval);
         cmp_bits[i] = y_fnzc.to_u32().unwrap() & 0x1u32 == 0x1u32; //mod 2, convert RingElem to u32, then to bool
+        println!("cmp[{}]={}", i, cmp_bits[i]);
         //end Line 12 
 
         /*Line 19 */
@@ -466,7 +483,7 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
         println!("Start Reveal sigma {}, need exchange 1 bool value", i);
     
         let len_ex = buf1.len();
-        let exchange_rings = {
+        let exchange_bit = {
             if let Err(err) = writer.write_all(&&buf1.as_slice()).await{
                 eprintln!("Write to partner failed:{}", err);
                 std::process::exit(-1);
@@ -480,14 +497,14 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
                     eprintln!("read from client error: {}", e);
                     std::process::exit(-1);
                 }
-                Ok(len_ex) => {
-                    println!("Receive {} bytes from partner.", len_ex);
-                }
-                Ok(n) => {
-                    println!("client closed or other errors.");
+                Ok(0) => {
+                    println!("client closed.");
                     std::process::exit(-1);
                 }// 遇到了EOF     
-            }     
+                Ok(n) => {
+                    println!("Receive {} bytes from partner.", n);
+                }
+            }
         };
         //let buf2 = block_on(exchange_message(msg_ty, msg_rx, &buf1));
         let buf2 = readerbuf[0..len_ex].to_vec();
@@ -498,7 +515,6 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
             _ =>{false}
         };
         println!("End Reveal sigma {}", i);
-        println!("Step 4-3-{}", i);
         println!("sigma_{}={}", i, sigma);
         /*Line 20-21 */
         if sigma == true{
@@ -524,7 +540,5 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
     cmp_bits
        
 }
-
-
 
 

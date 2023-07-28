@@ -24,7 +24,7 @@ impl MPCServer{
         MPCServer{s: None}
     }
 
-    pub async fn start(&mut self)->Result<(), Error>{
+    pub async fn start(&mut self, addr: &str)->Result<(), Error>{
         let seed = PrgSeed::random();
         let mut stream = FixedKeyPrgStream::new();
         stream.set_key(&seed.key);
@@ -43,7 +43,7 @@ impl MPCServer{
         let offlinedata = OfflineInfomation::new();
         let mut p = MPCParty::new(offlinedata, PartyRole::Active);
         p.setup(&config, INPUT_SIZE, INPUT_BITS);
-        let listner = TcpListener::bind("127.0.0.1:8888").await.unwrap();
+        let listner = TcpListener::bind(addr).await.unwrap();
         self.s = Some(listner);
         println!("Listening...");
         let (c, _addr) = self.s.as_ref().unwrap().accept().await.unwrap();
@@ -72,8 +72,8 @@ impl MPCServer{
             }
         }
         println!("");
-        let mut f_x = File::create("../test/x1.bin").expect("create failed");
-        let mut f_cmp = File::create("../test/cmp1.bin").expect("create failed");
+        let mut f_x = File::create("../test/x0.bin").expect("create failed");
+        let mut f_cmp = File::create("../test/cmp0.bin").expect("create failed");
         f_x.write_all(&bincode::serialize(&x_share).expect("Serialize q-bool-share error")).expect("Write q-bool-share error.");
         f_cmp.write_all(&bincode::serialize(&result).expect("Serialize q-bool-share error")).expect("Write q-bool-share error.");
         Result::Ok(())
@@ -89,7 +89,7 @@ impl MPCClient{
         MPCClient{}
     }
 
-    pub async fn start(&mut self)->Result<(), Error>{
+    pub async fn start(&mut self, addr: &str)->Result<(), Error>{
         let seed = PrgSeed::random();
         let mut stream = FixedKeyPrgStream::new();
         stream.set_key(&seed.key);
@@ -108,7 +108,8 @@ impl MPCClient{
         let mut offlinedata = OfflineInfomation::new();
         let mut p = MPCParty::new(offlinedata, PartyRole::Passitive);
         p.setup(&config, INPUT_SIZE, INPUT_BITS);
-        let s = TcpStream::connect("127.0.0.1:8888").await?;
+        
+        let s = TcpStream::connect(addr).await?;
         let (r, w) = s.into_split();
        
         let result = max(&p, &x_share, r, w).await;
@@ -124,7 +125,7 @@ impl MPCClient{
             }
             println!("");
         }
-        print!("cmp_share=");       
+        print!("cmp_share =");       
         for i in 0..result.len(){           
             if result[i] == true{
                 print!("1");
@@ -134,8 +135,8 @@ impl MPCClient{
             }
         }
 
-        let mut f_x = File::create("../test/x0.bin").expect("create failed");
-        let mut f_cmp = File::create("../test/cmp0.bin").expect("create failed");
+        let mut f_x = File::create("../test/x1.bin").expect("create failed");
+        let mut f_cmp = File::create("../test/cmp1.bin").expect("create failed");
         f_x.write_all(&bincode::serialize(&x_share).expect("Serialize q-bool-share error")).expect("Write q-bool-share error.");
         f_cmp.write_all(&bincode::serialize(&result).expect("Serialize q-bool-share error")).expect("Write q-bool-share error.");
         Result::Ok(())
