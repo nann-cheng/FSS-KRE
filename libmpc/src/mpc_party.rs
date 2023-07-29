@@ -225,15 +225,15 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
         let vc_0:Vec<u8> = mask_bits.iter().map(|x| if *x == true {1} else {0}).collect(); // convert the bool vec to u8 vec such that the message can be convoyed in the channel
         
         let len_ex = vc_0.len();
-        println!("Start Exchange1");
+        //println!("Start Exchange1");
         let exchange_bool_vec = {
             if let Err(err) = writer.write_all(&vc_0.as_slice()).await{
                 eprintln!("Write to partner failed:{}", err);
                 std::process::exit(-1);
             }
-            else{
-                println!("Write to partner {} bytes.", len_ex);
-            }
+            //else{
+            //    println!("Write to partner {} bytes.", len_ex);
+            //}
 
             match  reader.read_exact(&mut readerbuf[0..len_ex]).await{
                 Err(e) => {
@@ -245,11 +245,12 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
                     std::process::exit(-1);
                 }// 遇到了EOF     
                 Ok(n) => {
-                    println!("Receive {} bytes from partner.", n);
+                    //println!("Receive {} bytes from partner.", n);
+                    assert_eq!(n, len_ex);
                 }        
             }     
         };
-        println!("End Exchange1");
+        //println!("End Exchange1");
         let vc_1 = readerbuf[0..len_ex].to_vec();
         let share0 = ChannelMessage::to_boolvec_type(vc_0).unwrap();
         let share1 = ChannelMessage::to_boolvec_type(vc_1).unwrap();
