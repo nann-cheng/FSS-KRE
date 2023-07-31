@@ -67,24 +67,28 @@ mod test
             }
             v
         };
-        let mut v: Vec<u32> = Vec::<u32>::new();
-        for i in 0..INPUT_SIZE{
-           let bv0 = x0[i*INPUT_BITS..(i+1)*INPUT_BITS].to_vec();
-           let bv1 = x1[i*INPUT_BITS..(i+1)*INPUT_BITS].to_vec();
-           let mut r1 = RingElm::from(bv2uint(bv0));
-           let mut r2 = RingElm::from(bv2uint(bv1)); 
-           r1.add(&r2);
-           println!("{:?}", r1);
-           v.push(r1.to_u32().unwrap());
-        }
         
+        let mut x = x0;
+
+        for i in 0..x.len(){
+            x[i] = x[i] ^ x1[i];
+        }   //reconstruct the x = x0^x1
+
+        let mut v = Vec::<u32>::new();
+        for i in 0..INPUT_SIZE{
+            let e = bv2uint(x[i*INPUT_BITS..(i+1)*INPUT_BITS].to_vec());
+            v.push(e);
+        } // convert x-s to u32-s
+
         let x_max = v.iter().max().unwrap();
 
-        let mut cv0 = RingElm::from(bv2uint(c0));
-        let cv1 = RingElm::from(bv2uint(c1));
-        cv0.add(&cv1);
-        println!("max={:?}", cv0);
-        assert_eq!(*x_max, cv0.to_u32().unwrap());
+        let mut c = c0;
+        for i in 0..c.len(){
+            c[i] = c[i] ^ c1[i];
+        } 
+        let r = bv2uint(c);
+        println!("max={:?}", r);
+        assert_eq!(*x_max, r);
         
     }
 }
