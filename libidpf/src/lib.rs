@@ -2,8 +2,10 @@ pub mod prg;
 pub mod dpf;
 pub mod beavertuple;
 pub const NUMERIC_LEN: usize = 32usize;
-pub const INPUT_SIZE: usize = 10usize;
-pub const INPUT_BITS: usize = 32usize;
+
+
+pub const INPUT_SIZE: usize = 3usize;
+pub const INPUT_BITS: usize = 5usize;
 // pub mod fastfield;
 // pub mod mpc;
 // pub mod sketch;
@@ -17,6 +19,9 @@ extern crate lazy_static;
 
 mod ring;
 pub use crate::ring::RingElm;
+
+mod binary;
+pub use crate::binary::BinElm;
 
 // Additive group, such as (Z_n, +)
 pub trait Group {
@@ -62,7 +67,6 @@ pub fn vec_bool_to_string(vec_bool: &Vec<bool>) -> String {
     string
 }
 
-
 pub fn u32_to_bits_BE(nbits: usize, input: u32) -> String {
     assert!(nbits <= 32);
 
@@ -77,7 +81,6 @@ pub fn u32_to_bits_BE(nbits: usize, input: u32) -> String {
 
     string
 }
-
 
 pub fn u32_to_bits(nbits: usize, input: u32) -> Vec<bool> {
     assert!(nbits <= 32);
@@ -103,7 +106,6 @@ pub fn bits_to_u32(bits: &[bool]) -> u32 {
     }
     out
 }
-
 
 pub fn bits_to_u32_BE(bits: &[bool]) -> u32 {
     assert!(bits.len() <= 32);

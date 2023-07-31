@@ -121,7 +121,6 @@ fn gen_cor_word<W>(bit: bool, value: W, bits: &mut (bool, bool), seeds: &mut (pr
     if bits.1 {
         cw.word.negate();
     }
-    
 
     seeds.0 = converted.0.seed;
     seeds.1 = converted.1.seed;
@@ -235,18 +234,14 @@ where
         let mut keySize = 0usize;
 
         keySize += mem::size_of_val(&self.key_idx);
-
         // println!("key_idx is {}",mem::size_of_val(&self.key_idx));
 
 
         keySize += mem::size_of_val(&self.root_seed);
-
         // println!("root_seed is {}",mem::size_of_val(&self.root_seed));
 
 
         keySize += mem::size_of_val(&*self.cor_words);
-
-        
         // println!("cor_words is {}",mem::size_of_val(&*self.cor_words));
         keySize
     }

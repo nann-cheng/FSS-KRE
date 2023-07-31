@@ -2,6 +2,8 @@ use idpf::*;
 use idpf::prg::*;
 use idpf::dpf::*;
 use idpf::RingElm;
+use idpf::BinElm;
+
 use std::fs::File;
 use bincode::{serialize, deserialize};
 use std::io::prelude::*;
@@ -11,20 +13,16 @@ use beavertuple::BeaverTuple;
 //const LAN_LATENCY: u128 = 1u128;
 
 
-fn setup(input_size:usize, input_bits:usize) {
-    //set the file to store offline data
-
-
-    let seed = PrgSeed::random();
+fn setup(input_size:usize, input_bits:usize){
+    let seed = PrgSeed::one();
     let mut stream = FixedKeyPrgStream::new();
     stream.set_key(&seed.key);
 
-    //Offline-Step-1. Basic Parameters
+    //Offline-Step-1. Set IDPF Parameters
     let fix_betas = RingElm::from(1u32).to_vec(input_bits); //generate a series of 1 as beta
     let r_bits = stream.next_bits(input_bits*input_size);  
 
-
-    //Offline-Step-2. Random I-DPFs
+    //Offline-Step-2. Generate Random I-DPFs
     let mut dpf_0: Vec<DPFKey<RingElm>> = Vec::new();
     let mut dpf_1: Vec<DPFKey<RingElm>> = Vec::new();
     for i in 0..input_size{
@@ -39,7 +37,6 @@ fn setup(input_size:usize, input_bits:usize) {
     f_k0.write_all(&bincode::serialize(&dpf_0).expect("Serialize key error")).expect("Write key error.");
     f_k1.write_all(&bincode::serialize(&dpf_1).expect("Serialize key error")).expect("Write key error.");
 
-    
     let r_bits_0 = stream.next_bits(input_bits*input_size);
     let r_bits_1 = bits_Xor(&r_bits, &r_bits_0);
     
@@ -57,7 +54,6 @@ fn setup(input_size:usize, input_bits:usize) {
     let mut f_qb1 = File::create("../data/qb1.bin").expect("create failed");
     f_qb0.write_all(&bincode::serialize(&q_boolean_0).expect("Serialize q-bool-share error")).expect("Write q-bool-share error.");
     f_qb1.write_all(&bincode::serialize(&q_boolean_1).expect("Serialize q-bool-share error")).expect("Write q-bool-share error.");
-
 
 
     let mut q_numeric = Vec::new();
@@ -78,9 +74,10 @@ fn setup(input_size:usize, input_bits:usize) {
     let mut f_qa1 = File::create("../data/qa1.bin").expect("create failed");
     f_qa0.write_all(&bincode::serialize(&q_numeric_0).expect("Serialize q-a-share error")).expect("Write q-a-share error.");
     f_qa1.write_all(&bincode::serialize(&q_numeric_1).expect("Serialize q-a-share error")).expect("Write q-a-share error.");
+
     //Offline-Step-4. Random DPFs for zeroCheck, input_bits required in total
-    let mut zero_dpf_0: Vec<DPFKey<RingElm>> = Vec::new();
-    let mut zero_dpf_1: Vec<DPFKey<RingElm>> = Vec::new();
+    let mut zero_dpf_0: Vec<DPFKey<BinElm>> = Vec::new();
+    let mut zero_dpf_1: Vec<DPFKey<BinElm>> = Vec::new();
 
     let mut zero_dpf_r0: Vec<RingElm> = Vec::new();
     let mut zero_dpf_r1: Vec<RingElm> = Vec::new();
@@ -89,32 +86,28 @@ fn setup(input_size:usize, input_bits:usize) {
         let zero_r_bits = stream.next_bits(NUMERIC_LEN*2);
 
         let mut numeric_zero_r_1 = RingElm::from( bits_to_u32(&zero_r_bits[..NUMERIC_LEN]) );
-        let numeric_zero_r = RingElm::from( bits_to_u32(&zero_r_bits[..NUMERIC_LEN]) );
+        // let numeric_zero_r = RingElm::from( bits_to_u32(&zero_r_bits[..NUMERIC_LEN]) );
 
         // println!("numeric_zero_r={:?}", numeric_zero_r);
-
         // println!("Vec<bool>: {:?}", zero_r_bits[..NUMERIC_LEN].to_vec());
 
-
-
-        let numeric_zero_r_0 =RingElm::from( bits_to_u32(&zero_r_bits[NUMERIC_LEN..]) );
+        let numeric_zero_r_0 = RingElm::from( bits_to_u32(&zero_r_bits[NUMERIC_LEN..]) );
         numeric_zero_r_1.sub(&numeric_zero_r_0);
        
 
-        let zero_betas = RingElm::from(1u32).to_vec(NUMERIC_LEN);
-
+        let zero_betas: Vec<BinElm> = BinElm::from(false).to_vec(NUMERIC_LEN);
         let (k0, k1) = DPFKey::gen(&zero_r_bits[..NUMERIC_LEN], &zero_betas);
 
-        // let partial_data: Vec<bool> = zero_r_bits[..NUMERIC_LEN].to_vec();
-
+        // let mut partial_data: Vec<bool> = zero_r_bits[..NUMERIC_LEN].to_vec();
         // let k0Clone = k0.clone();
         // let k1Clone = k1.clone();
+        // println!("partial_data={:?}", partial_data);
+        // // partial_data[3] ^= true;
 
-        // let y_fnzc0: RingElm = k0Clone.eval(&partial_data);
+        // let y_fnzc0: BinElm = k0Clone.eval(&partial_data);
         // println!("y_fnzc0={:?}", y_fnzc0);
-        // let mut y_fnzc1: RingElm = k1Clone.eval(&partial_data);
+        // let mut y_fnzc1: BinElm = k1Clone.eval(&partial_data);
         // println!("y_fnzc1={:?}", y_fnzc1);
-
         // y_fnzc1.add(&y_fnzc0);
         // println!("y_fnzc={:?}", y_fnzc1);
 
@@ -123,8 +116,6 @@ fn setup(input_size:usize, input_bits:usize) {
 
         zero_dpf_r0.push(numeric_zero_r_0);
         zero_dpf_r1.push(numeric_zero_r_1);
-       
-        
     }
     let mut f_zc_a0 = File::create("../data/zc_a0.bin").expect("create failed");
     let mut f_zc_a1 = File::create("../data/zc_a1.bin").expect("create failed");
@@ -185,8 +176,8 @@ fn setup(input_size:usize, input_bits:usize) {
 
 fn main()
 {
-    // setup(3, 5);
-    setup(10, 32);
+    setup(3, 5);
+    // setup(10, 32);
 }
 
 #[cfg(test)]

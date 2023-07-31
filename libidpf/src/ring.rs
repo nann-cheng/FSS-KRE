@@ -67,12 +67,6 @@ impl crate::Group for RingElm {
 
     #[inline]
     fn sub(&mut self, other: &Self) {
-        /*if self.value < other.value {
-            // self.value += u32::MAX - &other.value+1 ;
-            self.value = other.value - self.value ;
-        }else{
-            self.value -= other.value;
-        }*/
         self.value = self.value.wrapping_sub( other.value );
     }
 

@@ -3,6 +3,7 @@ use idpf::*;
 use idpf::beavertuple::BeaverTuple;
 use idpf::dpf::*;
 use idpf::RingElm;
+use idpf::BinElm;
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 use tokio::net::tcp::OwnedReadHalf;
@@ -25,11 +26,13 @@ pub struct FileConfig<'a>{
 } // This struct is configuare the file where the offline data is stored. 
 
 pub struct OfflineInfomation{
-    k_share: Vec<DPFKey<RingElm>>, //dpf
+    k_share: Vec<DPFKey<RingElm>>, //idpf keys
+
     a_share: Vec<bool>,  //alpha
     qa_share: Vec<RingElm>, //q arithmetical share
     qb_share: Vec<bool>, //q bool share
-    zc_k_share: Vec<DPFKey<RingElm>>,
+
+    zc_k_share: Vec<DPFKey<BinElm>>,//dpf keys for zero_check
     zc_a_share: Vec<RingElm>,
     beavers: Vec<BeaverTuple>
 }
@@ -195,9 +198,7 @@ impl MPCParty{
     //msg_recv
 }*/
 
-//pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, msg_ty: &mpsc::Sender<Vec<u8>>, msg_rx: &mut mpsc::Receiver<Vec<u8>>)->Vec<bool>{
 pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mut writer: OwnedWriteHalf)->Vec<bool>{
-    println!("Start!");
     let m: usize = p.m;
     let n = p.n;
     
@@ -205,7 +206,6 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
     let mut mask_bits = Vec::<bool>::new(); //t in the paper, it is a bit vector of length n
     //let mut prefix_bits = vec![false;m*n]; // m bit vector whose length is n
     let mut cmp_bits = vec![false;n]; // the current prefix that has been checked
-    
     let mut old_state = Vec::<EvalState>::new();
     let mut new_state = Vec::<EvalState>::new();
 
@@ -289,7 +289,7 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
     for i in 0..n{
         // println!("***************start the {} iteration***************", i);
         // println!("qb[{}]={}", i, p.offlinedata.qb_share[i]);
-        let mut mu_share = RingElm::zero();
+        let mut mu_share: RingElm = RingElm::zero();
         for j in 0..m{
             let new_bit = t[j*n+i]; //x[j][i]
             let (state_new, beta) = p.offlinedata.k_share[j].eval_bit(&old_state[j], new_bit); //compute the IDPF value at t[j][i]
@@ -473,18 +473,17 @@ pub async fn max(p: &MPCParty, x_bits: &Vec<bool>, mut reader: OwnedReadHalf, mu
             None      => println!( "u32 Conversion failed!!" ),
         }
 
-        // println!("Vec<bool>: {:?}", vec_eval);
+        // println!("{:?} x_fznc={:?}",i, x_fznc);
+        // println!("{:?} vec_eval={:?}",i, vec_eval);
 
-        let y_fnzc: RingElm = p.offlinedata.zc_k_share[i].eval(&vec_eval);
+        let y_fnzc: BinElm = p.offlinedata.zc_k_share[i].eval(&vec_eval);
         // println!("y_fnzc={:?}", y_fnzc);
-
-        cmp_bits[i] = (y_fnzc.to_u32().unwrap() & 0x1u32) == 0x1u32; //mod 2, convert RingElem to u32, then to bool
-        match p.role{
-            PartyRole::Active => cmp_bits[i] = !cmp_bits[i],
-            PartyRole::Passitive => {} 
-        }
+        cmp_bits[i] = y_fnzc.to_Bool();
+        // match p.role{
+        //     PartyRole::Active => cmp_bits[i] = !cmp_bits[i],
+        //     PartyRole::Passitive => {} 
+        // }
         // println!("cmp[{}]={}", i, cmp_bits[i]);
-
         //end Line 12 
 
         /*Line 19 */
