@@ -1,10 +1,3 @@
-use std::io::Error;
-use super::mpc_party::*;
-use idpf::*;
-use idpf::prg::*;
-use std::fs::File;
-use std::io::Write;
-use bincode::{serialize};
 use tokio::{
     io::{AsyncWriteExt, AsyncReadExt},
     net::{
@@ -13,183 +6,168 @@ use tokio::{
     },
     //task;
 };
+use idpf::RingElm;
+use idpf::Group;
+//use async_trait::async_trait;
 
 
-pub struct MPCServer{
-    s: Option<TcpListener>,
+
+pub struct NetInterface{
+    //pub listener: TcpListener,
+    pub is_server: bool,
+    pub reader: OwnedReadHalf,
+    pub writer: OwnedWriteHalf
 }
 
-impl MPCServer{
-    pub fn new() -> Self{
-        MPCServer{s: None}
-    }
 
-    pub async fn start(&mut self, addr: &str)->Result<(), Error>{
-        // let seed = PrgSeed::random();
-        let seed = PrgSeed::zero();
-        let mut stream = FixedKeyPrgStream::new();
-        stream.set_key(&seed.key);
 
-        let x_share = stream.next_bits(INPUT_BITS*INPUT_SIZE);
-        let config = FileConfig{
-            dir_path: "../data",
-            a_file: "a0.bin",
-            k_file: "k0.bin",
-            qa_file: "qa0.bin",
-            qb_file: "qb0.bin",
-            zc_a_file: "zc_a0.bin",
-            zc_k_file: "zc_k0.bin",
-            beavers_file: "beaver0.bin"
-        };
 
-        let offlinedata = OfflineInfomation::new();
-        let mut p = MPCParty::new(offlinedata, PartyRole::Active);
-        p.setup(&config, INPUT_SIZE, INPUT_BITS);
-        let listner = TcpListener::bind(addr).await.unwrap();
-        self.s = Some(listner);
-        println!("Listening...");
-        let (c, _addr) = self.s.as_ref().unwrap().accept().await.unwrap();
-        let (r, w) = c.into_split();
+impl NetInterface{
+    pub async fn new(isserver: bool, addr: &str)->NetInterface{
+        if isserver{
+            let listner = TcpListener::bind(addr).await.unwrap();
+            println!("***Start Listening ......***");
+            let (c, caddr) = listner.accept().await.unwrap();
+            println!("Accept from {:?}", caddr);
+            let (r, w) = c.into_split();
 
-        let result = max(&p, &x_share, r, w).await;
-        for i in 0..INPUT_SIZE{
-            print!("x_share[{}]=", i);
-            for j in 0..INPUT_BITS{
-                if x_share[i*INPUT_BITS+j] == true{
-                    print!("1");
-                }
-                else {
-                    print!("0");
-                }
-            }
-            println!("");
-        }
-        print!("cmp_share=");
-        for i in 0..result.len(){           
-            if result[i] == true{
-                print!("1");
-            }
-            else {
-                print!("0");
+            NetInterface{
+                is_server: true,
+                reader: r,
+                writer: w
             }
         }
-        println!("");
-        let mut f_x = File::create("../test/x0.bin").expect("create failed");
-        let mut f_cmp = File::create("../test/cmp0.bin").expect("create failed");
-        f_x.write_all(&bincode::serialize(&x_share).expect("Serialize q-bool-share error")).expect("Write q-bool-share error.");
-        f_cmp.write_all(&bincode::serialize(&result).expect("Serialize q-bool-share error")).expect("Write q-bool-share error.");
-        Result::Ok(())
-    }
-}
-
-pub struct MPCClient{
-    //s: Option<TcpStream>
-}
-
-impl MPCClient{
-    pub fn new() -> Self{
-        MPCClient{}
+        else{
+            let s = TcpStream::connect(addr).await.unwrap();
+            let (r, w) = s.into_split();
+            println!("Connect to {} success.", addr);
+            NetInterface{
+                is_server: false,
+                reader: r,
+                writer: w
+            }
+        }
     }
 
-    pub async fn start(&mut self, addr: &str)->Result<(), Error>{
-        // let seed = PrgSeed::random();
-        let seed = PrgSeed::one();
-        let mut stream = FixedKeyPrgStream::new();
-        stream.set_key(&seed.key);
-
-
-        let x_share = stream.next_bits(INPUT_BITS*INPUT_SIZE);
-        //------------- Debug-----------------
-        // let mut f = File::open("../data/xb1.bin").expect("Open file failed");
-        // let mut buf = Vec::<u8>::new();
-        // f.read_to_end(&mut buf).expect("Read file error!");
-        // let x_share = bincode::deserialize(&buf).expect("Deserialize key-share Error");
-        //------------- Debug-----------------
-
-        let config = FileConfig{
-            dir_path: "../data",
-            a_file: "a1.bin",
-            k_file: "k1.bin",
-            qa_file: "qa1.bin",
-            qb_file: "qb1.bin",
-            zc_a_file: "zc_a1.bin",
-            zc_k_file: "zc_k1.bin",
-            beavers_file: "beaver1.bin"
-        };
-
-        let mut offlinedata = OfflineInfomation::new();
-        let mut p = MPCParty::new(offlinedata, PartyRole::Passitive);
-        p.setup(&config, INPUT_SIZE, INPUT_BITS);
+    pub async fn exchange_a_bool(&mut self, msg: bool)->bool{
+        let mut buf: [u8; 1] = [0; 1];
         
-        let s = TcpStream::connect(addr).await?;
-        let (r, w) = s.into_split();
-       
-        let result = max(&p, &x_share, r, w).await;
-        for i in 0..INPUT_SIZE{
-            print!("x_share[{}]=", i);
-            for j in 0..INPUT_BITS{
-                if x_share[i*INPUT_BITS+j] == true{
-                    print!("1");
-                }
-                else {
-                    print!("0");
-                }
-            }
-            println!("");
+        let mut x_msg: Vec<u8> = Vec::new();
+        if msg{
+            x_msg.push(0x1u8);
+        } // convert the bool vec to u8 vec such that the message can be convoyed in the channel
+        else{
+            x_msg.push(0x0u8);
         }
-        print!("cmp_share =");       
-        for i in 0..result.len(){           
-            if result[i] == true{
-                print!("1");
-            }
-            else {
-                print!("0");
-            }
+        let xmsg_len = 1;
+        
+        if let Err(err) = self.writer.write_all(&x_msg.as_slice()).await{
+            eprintln!("Write to partner failed:{}", err);
+            std::process::exit(-1);
         }
+        else{
+            println!("Write to partner {} bytes.", xmsg_len);
+        } // send message to the partner
 
-        let mut f_x = File::create("../test/x1.bin").expect("create failed");
-        let mut f_cmp = File::create("../test/cmp1.bin").expect("create failed");
-        f_x.write_all(&bincode::serialize(&x_share).expect("Serialize q-bool-share error")).expect("Write q-bool-share error.");
-        f_cmp.write_all(&bincode::serialize(&result).expect("Serialize q-bool-share error")).expect("Write q-bool-share error.");
-        Result::Ok(())
-    }
-}
-
-/*async fn read_from_partner(reader: OwnedReadHalf, msg_tx: &mpsc::Sender<Vec<u8>>){
-    let mut buf_reader = tokio::io::BufReader::new(reader);
-    let mut buf= [0; 1024];
-    //let mut buf = Vec::<u8>::new();
-    loop {
-        match  buf_reader.read(&mut buf[0..10]).await{
+        match  self.reader.read_exact(&mut buf[0..xmsg_len]).await{
             Err(e) => {
                 eprintln!("read from client error: {}", e);
-                break;
+                std::process::exit(-1);
             }
-            // 遇到了EOF
             Ok(0) => {
-                println!("client closed");
-                break;
-            }
+                println!("client closed.");
+                std::process::exit(-1);
+            }  
             Ok(n) => {
-                println!("Receive {} bytes from network.", n);
-                if msg_tx.send(buf[0..n].to_vec()).await.is_err() {
-                    eprintln!("receiver closed");
-                    break;
-                }
-            }
+                assert_eq!(n, xmsg_len);
+                println!("Receive {} bytes from partner.", n);
+            }        
         }     
+        let mut r = msg; //save the msg
+        if buf[0] == 1{
+            r = !r;
+        }
+        r
+    }
+
+    pub async fn exchange_bool_vec(&mut self, msg: Vec<bool>)->Vec<bool>{
+        let mut buf: [u8; 1024] = [0; 1024];
+        
+        let x_msg: Vec<u8> = msg.iter().map(|x| if *x == true {1} else {0}).collect(); // convert the bool vec to u8 vec such that the message can be convoyed in the channel
+        let xmsg_len = x_msg.len();
+        
+        if let Err(err) = self.writer.write_all(&x_msg.as_slice()).await{
+            eprintln!("Write to partner failed:{}", err);
+            std::process::exit(-1);
+        }
+        else{
+            println!("Write to partner {} bytes.", xmsg_len);
+        } // send message to the partner
+
+        match  self.reader.read_exact(&mut buf[0..xmsg_len]).await{
+            Err(e) => {
+                eprintln!("read from client error: {}", e);
+                std::process::exit(-1);
+            }
+            Ok(0) => {
+                println!("client closed.");
+                std::process::exit(-1);
+            }  
+            Ok(n) => {
+                assert_eq!(n, xmsg_len);
+                println!("Receive {} bytes from partner.", n);
+            }        
+        }     
+        let mut r = msg; //save the msg
+        for i in 0..xmsg_len{
+            if buf[i] == 1{
+                r[i] = !r[i];
+            }
+        }
+        r
+    }
+
+    pub async fn exchange_ring_vec(&mut self, msg: Vec<RingElm>) -> Vec<RingElm>{
+        let mut buf: [u8; 1024] = [0; 1024];
+        let mut x_msg: Vec<u8> = Vec::<u8>::new();
+        for e in &msg{
+            x_msg.append(&mut e.to_u32().unwrap().to_be_bytes().to_vec());
+        }//convert u32 stream to u8 stream
+
+        let xmsg_len = x_msg.len();
+        if let Err(err) = self.writer.write_all(&x_msg.as_slice()).await{
+            eprintln!("Write to partner failed:{}", err);
+            std::process::exit(-1);
+        }
+        else{
+            println!("Write to partner {} bytes.", xmsg_len);
+        } // send message to the partner
+
+        match  self.reader.read_exact(&mut buf[0..xmsg_len]).await{
+            Err(e) => {
+                eprintln!("read from client error: {}", e);
+                std::process::exit(-1);
+            }
+            Ok(0) => {
+                println!("client closed.");
+                std::process::exit(-1);
+            }     
+            Ok(n) => {
+                assert_eq!(n, xmsg_len);
+                println!("Receive {} bytes from partner.", n);
+            }        
+        }
+
+        let mut r: Vec<RingElm> = msg;
+        for i in 0..xmsg_len/4{
+            let mut ybuf: [u8; 4]= [0; 4];
+            for j in 0..4{
+                ybuf[j] = buf[i*4+j];
+            }
+            let e = RingElm::from(u32::from_be_bytes(ybuf));
+            r[i].add(&e);
+        }
+       
+        r     
     }
 }
-
-/// 写给客户端
-async fn write_to_partner(mut writer: OwnedWriteHalf, msg_rx:&mut mpsc::Receiver<Vec<u8>>) {
-    //let mut buf_writer = tokio::io::BufWriter::new(writer);
-    
-    while let Some(e) = msg_rx.recv().await {
-        println!("Write {} to network",e.len());
-        if let Err(err) = writer.write_all(e.as_slice()).await {
-            eprintln!("write to client failed: {}", err);
-            break;
-        }
-    }
-}*/

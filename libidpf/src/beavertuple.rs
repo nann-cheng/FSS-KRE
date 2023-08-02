@@ -1,3 +1,5 @@
+use crate::{ring, Group};
+
 use super::RingElm;
 use serde::ser::{Serialize, Serializer, SerializeStruct};
 use std::fmt;
@@ -128,4 +130,31 @@ impl<'de> Deserialize<'de> for BeaverTuple {
         const FIELDS: &'static [&'static str] = &["a", "b", "c"];
         deserializer.deserialize_struct("BeaverTuple", FIELDS, BeaverVisitor)
     }
+}
+
+/*The multiplication of [alpha] x [beta], the values of beaver_share are [a], [b], and [ab], d and e are the reconstructed values of alpha-a, beta-b*/
+fn beaver_mul(is_server: bool, beaver_share: &BeaverTuple, d: &RingElm, e: &RingElm) -> RingElm{
+    
+    let mut r;
+    if is_server{
+        r = beaver_share.ab.clone();
+    }
+    else{
+        r = RingElm::from(0);
+    }
+
+    let mut r0 = d.clone();
+    r0.mul(&e); //d*e
+
+    let mut r1 = d.clone();
+    r1.mul(&beaver_share.b); //d*[b]
+
+    let mut r2 = e.clone();
+    r2.mul(&beaver_share.a); //e*[a]
+    
+    r.add(&r0);
+    r.add(&r1);
+    r.add(&r2);
+
+    r
 }

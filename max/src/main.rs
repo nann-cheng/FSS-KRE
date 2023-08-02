@@ -1,15 +1,60 @@
 /* We assume two mpc parties, one playing as a tpc server, while the other plays as the client. */
 
-use libmpc::mpc_platform::MPCServer;
-
+use libmpc::mpc_party::{FileConfig, OfflineInfomation, MPCParty, max};
+use libmpc::mpc_platform::NetInterface;
+use idpf::prg::*;
+use idpf::*;
 
 //static mut p: MPCParty = MPCParty::new(OfflineInfomation::new(), PartyRole::Active);
 //static mut x_share: Vec<bool> = Vec::new();
 #[tokio::main]
 async fn main(){
-    let mut p = MPCServer::new();
-    let _ = p.start("127.0.0.1:8888").await;
+    let seed = PrgSeed::zero();
+    let mut stream = FixedKeyPrgStream::new();
+    stream.set_key(&seed.key);
+
+    let x_share = stream.next_bits(INPUT_BITS*INPUT_SIZE);
+    let config = FileConfig{
+        dir_path: "../data",
+        a_file: "a0.bin",
+        k_file: "k0.bin",
+        qa_file: "qa0.bin",
+        qb_file: "qb0.bin",
+        zc_a_file: "zc_a0.bin",
+        zc_k_file: "zc_k0.bin",
+        beavers_file: "beaver0.bin"
+    };
+    let netlayer = NetInterface::new(true, "127.0.0.1:8088").await;
+    let offlinedata = OfflineInfomation::new();
+    let mut p = MPCParty::new(offlinedata, netlayer);
+    p.setup(&config, INPUT_SIZE, INPUT_BITS);
+    let result = max(&mut p, &x_share).await;
+
+    for i in 0..INPUT_SIZE{
+        print!("x_share[{}]=", i);
+        for j in 0..INPUT_BITS{
+            if x_share[i*INPUT_BITS+j] == true{
+                print!("1");
+            }
+            else {
+                print!("0");
+            }
+        }
+        println!("");
+    }
+    print!("cmp_share =");       
+    for i in 0..result.len(){           
+        if result[i] == true{
+            print!("1");
+        }
+        else {
+            print!("0");
+        }
+    }
 }
+
+
+
 
 #[cfg(test)]
 mod test

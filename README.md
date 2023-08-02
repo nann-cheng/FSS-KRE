@@ -13,4 +13,6 @@ You can run the example by this way:
     - in the first terminal, enter the max directory, run the command: cargo run --example max_server
     - in the second terminal, enter the max directory, run the command: cargo run --example max_client
 
+  The results are written in "test", then run "Cargo test" to verify the results.
+
 
