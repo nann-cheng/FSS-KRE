@@ -93,7 +93,7 @@ impl NetInterface{
     pub async fn exchange_bool_vec(&mut self, msg: Vec<bool>)->Vec<bool>{
         let mut buf: [u8; 1024] = [0; 1024];
         
-        let x_msg: Vec<u8> = msg.iter().map(|x| if *x == true {1} else {0}).collect(); // convert the bool vec to u8 vec such that the message can be convoyed in the channel
+        let x_msg: Vec<u8> = msg.clone().iter().map(|x| if *x == true {1} else {0}).collect(); // convert the bool vec to u8 vec such that the message can be convoyed in the channel
         let xmsg_len = x_msg.len();
         
         if let Err(err) = self.writer.write_all(&x_msg.as_slice()).await{
