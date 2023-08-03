@@ -1,8 +1,9 @@
-use idpf::*;
-use idpf::prg::*;
-use idpf::dpf::*;
-use idpf::RingElm;
-use idpf::BinElm;
+use fss::*;
+use fss::prg::*;
+use fss::dpf::*;
+use fss::idpf::*;
+use fss::RingElm;
+use fss::BinElm;
 
 use std::fs::File;
 use bincode::{serialize, deserialize};
@@ -23,11 +24,11 @@ fn setup(input_size:usize, input_bits:usize){
     let r_bits = stream.next_bits(input_bits*input_size);  
 
     //Offline-Step-2. Generate Random I-DPFs
-    let mut dpf_0: Vec<DPFKey<RingElm>> = Vec::new();
-    let mut dpf_1: Vec<DPFKey<RingElm>> = Vec::new();
+    let mut dpf_0: Vec<IDPFKey<RingElm>> = Vec::new();
+    let mut dpf_1: Vec<IDPFKey<RingElm>> = Vec::new();
     for i in 0..input_size{
         let alpha = &r_bits[i*input_bits..(i+1)*input_bits];
-        let (k0, k1) = DPFKey::gen(&alpha, &fix_betas);
+        let (k0, k1) = IDPFKey::gen(&alpha, &fix_betas);
 
         dpf_0.push(k0);
         dpf_1.push(k1);
@@ -95,8 +96,9 @@ fn setup(input_size:usize, input_bits:usize){
         numeric_zero_r_1.sub(&numeric_zero_r_0);
        
 
-        let zero_betas: Vec<BinElm> = BinElm::from(false).to_vec(NUMERIC_LEN);
-        let (k0, k1) = DPFKey::gen(&zero_r_bits[..NUMERIC_LEN], &zero_betas);
+        // let zero_betas: Vec<BinElm> = BinElm::from(false).to_vec(NUMERIC_LEN);
+        let zero_beta: BinElm = BinElm::zero();
+        let (k0, k1) = DPFKey::gen(&zero_r_bits[..NUMERIC_LEN], &zero_beta);
 
         // let mut partial_data: Vec<bool> = zero_r_bits[..NUMERIC_LEN].to_vec();
         // let k0Clone = k0.clone();
@@ -117,6 +119,7 @@ fn setup(input_size:usize, input_bits:usize){
         zero_dpf_r0.push(numeric_zero_r_0);
         zero_dpf_r1.push(numeric_zero_r_1);
     }
+
     let mut f_zc_a0 = File::create("../data/zc_a0.bin").expect("create failed");
     let mut f_zc_a1 = File::create("../data/zc_a1.bin").expect("create failed");
     let mut f_zc_k0 = File::create("../data/zc_k0.bin").expect("create failed");
@@ -182,14 +185,14 @@ fn main()
 
 #[cfg(test)]
 mod tests {
-    use idpf::*;
-    use idpf::prg::*;
-    use idpf::dpf::*;
-    use idpf::RingElm;
+    use fss::*;
+    use fss::prg::*;
+    use fss::dpf::*;
+    use fss::RingElm;
     use std::fs::File;
     use bincode::{serialize, deserialize};
     use std::io::prelude::*;
-    use idpf::beavertuple::*;
+    use fss::beavertuple::*;
     
     #[test]
     fn it_works() {

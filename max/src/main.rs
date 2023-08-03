@@ -2,8 +2,8 @@
 
 use libmpc::mpc_party::{FileConfig, OfflineInfomation, MPCParty, max};
 use libmpc::mpc_platform::NetInterface;
-use idpf::prg::*;
-use idpf::*;
+use fss::prg::*;
+use fss::*;
 
 //static mut p: MPCParty = MPCParty::new(OfflineInfomation::new(), PartyRole::Active);
 //static mut x_share: Vec<bool> = Vec::new();
@@ -53,15 +53,12 @@ async fn main(){
     }
 }
 
-
-
-
 #[cfg(test)]
 mod test
 {
     use std::fs::File;
     use bincode::deserialize;
-    use idpf::{INPUT_BITS, INPUT_SIZE, RingElm, Group};
+    use fss::{INPUT_BITS, INPUT_SIZE, RingElm, Group};
     use std::io::Read;
     #[tokio::test]
     async fn max_works(){

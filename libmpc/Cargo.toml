@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 futures = "0.3.28"
 tokio = { version = "1.29", features = ["full"] }
-idpf = { path = "./../libidpf"}
+fss = { path = "./../libfss"}
 bincode = { version = "1.3"}
 lazy_static = "1.4.0"
 #async-trait = "0.1"

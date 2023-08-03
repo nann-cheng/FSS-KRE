@@ -1,7 +1,7 @@
 use libmpc::mpc_party::{FileConfig, OfflineInfomation, MPCParty, max};
 use libmpc::mpc_platform::NetInterface;
-use idpf::prg::*;
-use idpf::*;
+use fss::prg::*;
+use fss::*;
 use std::fs::File;
 use std::io::Write;
 use bincode;
@@ -11,12 +11,12 @@ extern crate tokio;
 //static mut x_share: Vec<bool> = Vec::new();
 #[tokio::main]
 async fn main(){
-    let seed = PrgSeed::zero();
+    let seed = PrgSeed::one();
     let mut stream = FixedKeyPrgStream::new();
     stream.set_key(&seed.key);
 
-    let _ = stream.next_bits(INPUT_BITS*INPUT_SIZE);
-    let _ = stream.next_bits(INPUT_BITS*INPUT_SIZE);
+    // let _ = stream.next_bits(INPUT_BITS*INPUT_SIZE);
+    // let _ = stream.next_bits(INPUT_BITS*INPUT_SIZE);
     let x_share = stream.next_bits(INPUT_BITS*INPUT_SIZE);
     let config = FileConfig{
         dir_path: "../data",

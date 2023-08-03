@@ -1,8 +1,9 @@
-use idpf::*;
-use idpf::beavertuple::BeaverTuple;
-use idpf::dpf::*;
-use idpf::RingElm;
-use idpf::BinElm;
+use fss::*;
+use fss::beavertuple::BeaverTuple;
+use fss::idpf::*;
+use fss::dpf::*;
+use fss::RingElm;
+use fss::BinElm;
 use std::path::PathBuf;
 use bincode::Error;
 use std::fs::File;
@@ -21,7 +22,7 @@ pub struct FileConfig<'a>{
 } // This struct is configuare the file where the offline data is stored. 
 
 pub struct OfflineInfomation{
-    k_share: Vec<DPFKey<RingElm>>, //idpf keys
+    k_share: Vec<IDPFKey<RingElm>>, //idpf keys
 
     a_share: Vec<bool>,  //alpha
     qa_share: Vec<RingElm>, //q arithmetical share
@@ -380,7 +381,7 @@ pub async fn max(p: &mut MPCParty, x_bits: &Vec<bool>)->Vec<bool>{
         // println!("{:?} vec_eval={:?}",i, vec_eval);
 
         let y_fnzc: BinElm = p.offlinedata.zc_k_share[i].eval(&vec_eval);
-        println!("y_fnzc={:?}", y_fnzc);
+        // println!("y_fnzc={:?}", y_fnzc);
         cmp_bits[i] = y_fnzc.to_Bool();
         /*if is_server{
             cmp_bits[i] = !cmp_bits[i]

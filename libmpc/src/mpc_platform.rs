@@ -6,11 +6,9 @@ use tokio::{
     },
     //task;
 };
-use idpf::RingElm;
-use idpf::Group;
+use fss::RingElm;
+use fss::Group;
 //use async_trait::async_trait;
-
-
 
 pub struct NetInterface{
     //pub listener: TcpListener,
@@ -18,9 +16,6 @@ pub struct NetInterface{
     pub reader: OwnedReadHalf,
     pub writer: OwnedWriteHalf
 }
-
-
-
 
 impl NetInterface{
     pub async fn new(isserver: bool, addr: &str)->NetInterface{
