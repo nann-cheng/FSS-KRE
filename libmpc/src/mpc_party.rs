@@ -177,7 +177,7 @@ impl MPCParty{
     }
 }
 
-pub async fn max(p: &mut MPCParty, x_bits: &Vec<bool>)->Vec<bool>{
+pub async fn bitwise_max(p: &mut MPCParty, x_bits: &Vec<bool>)->Vec<bool>{
     let m: usize = p.m;
     let n = p.n;
 
@@ -370,10 +370,10 @@ pub async fn max(p: &mut MPCParty, x_bits: &Vec<bool>)->Vec<bool>{
        } //end else if i < n-1
        
         //start Line 12, calculate the f_{NonZeroCheck}(x_fnzc)
-        let mut vec_eval = vec![false;NUMERIC_LEN];
+        let mut vec_eval = vec![false;32usize];
         let num_eval = x_fznc.to_u32();
         match num_eval {
-            Some(numeric) => vec_eval = u32_to_bits(NUMERIC_LEN,numeric),
+            Some(numeric) => vec_eval = u32_to_bits(32usize,numeric),
             None      => println!( "u32 Conversion failed!!" ),
         }
 

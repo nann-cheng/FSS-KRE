@@ -1,34 +1,65 @@
-/* We assume two mpc parties, one playing as a tpc server, while the other plays as the client. */
-
-use libmpc::mpc_party::{FileConfig, OfflineInfomation, MPCParty, max};
+use libmpc::mpc_party::{FileConfig, OfflineInfomation, MPCParty, bitwise_max};
 use libmpc::mpc_platform::NetInterface;
 use fss::prg::*;
-use fss::*;
+// use fss::*;
 
-//static mut p: MPCParty = MPCParty::new(OfflineInfomation::new(), PartyRole::Active);
-//static mut x_share: Vec<bool> = Vec::new();
+use std::fs::File;
+use std::io::Write;
+use std::env;
+
+const INPUT_SIZE: usize = 3usize;
+const INPUT_BITS: usize = 5usize;
+
 #[tokio::main]
-async fn main(){
-    let seed = PrgSeed::zero();
+async fn main() {
+    let mut is_server=false;
+
+    let args: Vec<String> = env::args().collect();
+    if args.len() > 1 {
+        // The first command-line argument (index 1) is accessed using args[1]
+        let first_argument = args[1].parse::<u8>();
+
+        // Check if the parsing was successful
+        match first_argument {
+            Ok(value) => {
+                match value{
+                    0 => is_server = true,
+                    1 => {},
+                    _ => eprintln!("Error: Party role illegale"),
+                }
+            }
+            Err(_) => {
+                eprintln!("Error: Unable to parse the first argument as a u8 value.");
+            }
+        }
+    } else {
+        eprintln!("No arguments provided.");
+    }
+
+    let seed = if is_server {PrgSeed::zero()} else {PrgSeed::one()};
     let mut stream = FixedKeyPrgStream::new();
     stream.set_key(&seed.key);
-
     let x_share = stream.next_bits(INPUT_BITS*INPUT_SIZE);
+
+    let index =  if is_server {String::from("0")} else {String::from("1")};
+
     let config = FileConfig{
         dir_path: "../data",
-        a_file: "a0.bin",
-        k_file: "k0.bin",
-        qa_file: "qa0.bin",
-        qb_file: "qb0.bin",
-        zc_a_file: "zc_a0.bin",
-        zc_k_file: "zc_k0.bin",
-        beavers_file: "beaver0.bin"
+        a_file: &format!( "a{}.bin", &index),
+        k_file: &format!( "k{}.bin", &index),
+        qa_file: &format!( "qa{}.bin", &index),
+        qb_file: &format!( "qb{}.bin", &index),
+
+        zc_a_file: &format!( "zc_a{}.bin", &index),
+        zc_k_file: &format!( "zc_k{}.bin", &index),
+        beavers_file: &format!( "beaver{}.bin", &index),
     };
-    let netlayer = NetInterface::new(true, "127.0.0.1:8088").await;
+    let netlayer = NetInterface::new(is_server, "127.0.0.1:8088").await;
     let offlinedata = OfflineInfomation::new();
+
     let mut p = MPCParty::new(offlinedata, netlayer);
     p.setup(&config, INPUT_SIZE, INPUT_BITS);
-    let result = max(&mut p, &x_share).await;
+    let result = bitwise_max(&mut p, &x_share).await;
 
     for i in 0..INPUT_SIZE{
         print!("x_share[{}]=", i);
@@ -51,6 +82,12 @@ async fn main(){
             print!("0");
         }
     }
+    println!(" ");
+    let mut f_x = File::create(format!( "../test/x{}.bin", &index)).expect("create failed");
+    let mut f_cmp = File::create(format!( "../test/cmp{}.bin", &index)).expect("create failed");
+    f_x.write_all(&bincode::serialize(&x_share).expect("Serialize x-bool-share error")).expect("Write x-bool-share error.");
+    f_cmp.write_all(&bincode::serialize(&result).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
+
 }
 
 #[cfg(test)]

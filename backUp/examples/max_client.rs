@@ -1,4 +1,4 @@
-use libmpc::mpc_party::{FileConfig, OfflineInfomation, MPCParty, max};
+use libmpc::mpc_party::{FileConfig, OfflineInfomation, MPCParty, bitwise_max};
 use libmpc::mpc_platform::NetInterface;
 use fss::prg::*;
 use fss::*;
@@ -6,17 +6,13 @@ use std::fs::File;
 use std::io::Write;
 use bincode;
 extern crate tokio;
-//use tokio;
-//static mut p: MPCParty = MPCParty::new(OfflineInfomation::new(), PartyRole::Active);
-//static mut x_share: Vec<bool> = Vec::new();
+
 #[tokio::main]
 async fn main(){
     let seed = PrgSeed::one();
     let mut stream = FixedKeyPrgStream::new();
     stream.set_key(&seed.key);
 
-    // let _ = stream.next_bits(INPUT_BITS*INPUT_SIZE);
-    // let _ = stream.next_bits(INPUT_BITS*INPUT_SIZE);
     let x_share = stream.next_bits(INPUT_BITS*INPUT_SIZE);
     let config = FileConfig{
         dir_path: "../data",
@@ -32,7 +28,7 @@ async fn main(){
     let offlinedata = OfflineInfomation::new();
     let mut p = MPCParty::new(offlinedata, netlayer);
     p.setup(&config, INPUT_SIZE, INPUT_BITS);
-    let result = max(&mut p, &x_share).await;
+    let result = bitwise_max(&mut p, &x_share).await;
 
     for i in 0..INPUT_SIZE{
         print!("x_share[{}]=", i);
@@ -62,16 +58,3 @@ async fn main(){
     f_x.write_all(&bincode::serialize(&x_share).expect("Serialize x-bool-share error")).expect("Write x-bool-share error.");
     f_cmp.write_all(&bincode::serialize(&result).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
 }
-
-/*#[tokio::main]
-async fn main(){
-    let mut s = NetInterface::new(false, "127.0.0.1:8888").await;
-    let mut e = Vec::<RingElm>::new();
-    e.push(RingElm::from(13));
-    e.push(RingElm::from(14));
-    e.push(RingElm::from(15));
-    e.push(RingElm::from(16));
-    println!("x_share={:?}", e);
-    let r = s.exchange_ring_vec(e).await;
-    println!("{:?}", r);
-}*/

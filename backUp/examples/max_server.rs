@@ -1,13 +1,13 @@
 //use crate::libmpc::MPCServer;
-use libmpc::mpc_party::{FileConfig, OfflineInfomation, MPCParty, max};
+use libmpc::mpc_party::{FileConfig, OfflineInfomation, MPCParty, bitwise_max};
 use libmpc::mpc_platform::NetInterface;
 use fss::prg::*;
 use fss::*;
 use std::fs::File;
 use std::io::Write;
 use bincode;
-//static mut p: MPCParty = MPCParty::new(OfflineInfomation::new(), PartyRole::Active);
-//static mut x_share: Vec<bool> = Vec::new();
+
+
 #[tokio::main]
 async fn main(){
     let seed = PrgSeed::zero();
@@ -27,9 +27,10 @@ async fn main(){
     };
     let netlayer = NetInterface::new(true, "127.0.0.1:8088").await;
     let offlinedata = OfflineInfomation::new();
+
     let mut p = MPCParty::new(offlinedata, netlayer);
     p.setup(&config, INPUT_SIZE, INPUT_BITS);
-    let result = max(&mut p, &x_share).await;
+    let result = bitwise_max(&mut p, &x_share).await;
 
     for i in 0..INPUT_SIZE{
         print!("x_share[{}]=", i);

@@ -2,15 +2,10 @@ pub mod prg;
 pub mod idpf;
 pub mod dpf;
 pub mod beavertuple;
-pub const NUMERIC_LEN: usize = 32usize;
 
-pub const INPUT_SIZE: usize = 3usize;
-pub const INPUT_BITS: usize = 5usize;
 
 #[macro_use]
 extern crate lazy_static;
-
-
 mod ring;
 pub use crate::ring::RingElm;
 
