@@ -176,7 +176,7 @@ fn setup(input_size:usize, input_bits:usize){
 
 fn main()
 {
-    setup(3, 5);
+    setup(INPUT_SIZE, INPUT_BITS);
     // setup(10, 32);
 }
 
