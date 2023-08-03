@@ -13,7 +13,7 @@ async fn main(){
     let seed = PrgSeed::zero();
     let mut stream = FixedKeyPrgStream::new();
     stream.set_key(&seed.key);
-
+    let _ = stream.next_bits(INPUT_BITS*INPUT_SIZE);
     let x_share = stream.next_bits(INPUT_BITS*INPUT_SIZE);
     let config = FileConfig{
         dir_path: "../data",
@@ -52,9 +52,24 @@ async fn main(){
             print!("0");
         }
     }
+    println!(" ");
 
     let mut f_x = File::create("../test/x0.bin").expect("create failed");
     let mut f_cmp = File::create("../test/cmp0.bin").expect("create failed");
     f_x.write_all(&bincode::serialize(&x_share).expect("Serialize x-bool-share error")).expect("Write x-bool-share error.");
     f_cmp.write_all(&bincode::serialize(&result).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
 }
+
+/*#[tokio::main]
+async fn main(){
+    let mut s = NetInterface::new(true, "127.0.0.1:8888").await;
+    
+    let mut e = Vec::<RingElm>::new();
+    e.push(RingElm::from(1023-13));
+    e.push(RingElm::from(1549-14));
+    e.push(RingElm::from(1673-15));
+    e.push(RingElm::from(651-16));
+    println!("x_share={:?}", e);
+    let r = s.exchange_ring_vec(e).await;
+    println!("{:?}", r);
+}*/

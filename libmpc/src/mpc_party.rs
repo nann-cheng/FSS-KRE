@@ -180,11 +180,9 @@ pub async fn max(p: &mut MPCParty, x_bits: &Vec<bool>)->Vec<bool>{
     let m: usize = p.m;
     let n = p.n;
 
-    let mut is_server: bool;
-    //let  netinterface = &mut p.netlayer;
+
     let is_server = p.netlayer.is_server;
     
-    let mut readerbuf: [u8; 1024] = [0; 1024]; 
     let mut mask_bits = Vec::<bool>::new(); //t in the paper, it is a bit vector of length n
     //let mut prefix_bits = vec![false;m*n]; // m bit vector whose length is n
     let mut cmp_bits = vec![false;n]; // the current prefix that has been checked
@@ -229,8 +227,8 @@ pub async fn max(p: &mut MPCParty, x_bits: &Vec<bool>)->Vec<bool>{
     
     //Online-step-3. Start bit-by-bit prefix query, from Line7
     for i in 0..n{
-        // println!("***************start the {} iteration***************", i);
-        // println!("qb[{}]={}", i, p.offlinedata.qb_share[i]);
+        println!("***************start the {} iteration***************", i);
+        println!("qb[{}]={}", i, p.offlinedata.qb_share[i]);
         let mut mu_share: RingElm = RingElm::zero();
         for j in 0..m{
             let new_bit = t[j*n+i]; //x[j][i]
@@ -239,12 +237,13 @@ pub async fn max(p: &mut MPCParty, x_bits: &Vec<bool>)->Vec<bool>{
             new_state[j] = state_new; 
         }
         /*mu is the number of elements having the prefix p_{i-1} || q[i] */
-        // println!("mu={:?}", mu_share);
+        println!("mu={:?}", mu_share);
+        
         let v0_share = mu_share.clone(); //Line 13, the number of elements having the prerix p_{i-1} || q[i]
         let mut v1_share = v_share.clone();
         v1_share.sub(&mu_share); // Line 14, the number of elements having prefix p_{i-1} || ~q[i]
         let v_share_t = (v0_share.clone(), v1_share.clone());
-        // println!("v0={:?}, v1={:?}", v0_share, v1_share);
+        println!("v0={:?}, v1={:?}", v0_share, v1_share);
         
         /*Exchange five ring_elements in parallel: u_i-w_i-alpha[i], (d_share, e_share) tuples for the two multiplication operation */
         let mut msg1 = Vec::<RingElm>::new(); // the send message
@@ -381,20 +380,19 @@ pub async fn max(p: &mut MPCParty, x_bits: &Vec<bool>)->Vec<bool>{
         // println!("{:?} vec_eval={:?}",i, vec_eval);
 
         let y_fnzc: BinElm = p.offlinedata.zc_k_share[i].eval(&vec_eval);
-        // println!("y_fnzc={:?}", y_fnzc);
+        println!("y_fnzc={:?}", y_fnzc);
         cmp_bits[i] = y_fnzc.to_Bool();
-        // match p.role{
-        //     PartyRole::Active => cmp_bits[i] = !cmp_bits[i],
-        //     PartyRole::Passitive => {} 
-        // }
-        // println!("cmp[{}]={}", i, cmp_bits[i]);
+        /*if is_server{
+            cmp_bits[i] = !cmp_bits[i]
+        }
+        println!("cmp_share={}", cmp_bits[i]);*/
         //end Line 12 
 
         /*Line 19 */
         let simga_share = cmp_bits[i] ^ p.offlinedata.qb_share[i];
         let sigma = p.netlayer.exchange_a_bool(simga_share).await;
         // println!("End Reveal sigma {}", i);
-        // println!("sigma_{}={}", i, sigma);
+        println!("sigma_{}={}", i, sigma);
         /*Line 20-21 */
         if sigma {
             v_share = v_share_t.1;
