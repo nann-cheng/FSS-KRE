@@ -1,18 +1,18 @@
 # MPC
-This project aims to compute the maximum/k^{th} ranking element from a secret set.
+This project is to perform secure computation for the maximum/k^{th} ranking element from a secret set.
 
 The are a few directories in the solution:
   - data: store the generated offline data
   - test: store auto-generated binary files for test purpose
-  - libidpf: some underlying structures and libraries used by the offline project and AsynParty project
-  - offline: the project to generate offline data used the the two mpc parties
-  - max: a project to  run the main function.
+  - libfss: implmentation for those fss primitives 
+  - offline: assisting in generating offline data used for online 2PC
+  - frontend: A frontend for bencharmking all basic protocols in libmpc.
   
-You can run the example by this way:
-  Open two terminals
-    - in the first terminal, enter the max directory, run the command: cargo run --example max_server
-    - in the second terminal, enter the max directory, run the command: cargo run --example max_client
+Open two terminals
+    - cd frontend
+    - In the 1st terminal: cargo run 0
+    - In the 2nd terminal: cargo run 1
 
-  The results are written in "test", then run "Cargo test" to verify the results.
+The results are written in "test", in frontend repo then run "cargo test" to verify the results.
 
 
