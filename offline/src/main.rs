@@ -86,9 +86,9 @@ fn setup(input_size:usize, input_bits:usize){
         let zero_r_bits = stream.next_bits(NUMERIC_LEN*2);
 
         let mut numeric_zero_r_1 = RingElm::from( bits_to_u32(&zero_r_bits[..NUMERIC_LEN]) );
-        // let numeric_zero_r = RingElm::from( bits_to_u32(&zero_r_bits[..NUMERIC_LEN]) );
+        let numeric_zero_r = RingElm::from( bits_to_u32(&zero_r_bits[..NUMERIC_LEN]) );
 
-        // println!("numeric_zero_r={:?}", numeric_zero_r);
+        println!("numeric_zero_r={:?}", numeric_zero_r);
         // println!("Vec<bool>: {:?}", zero_r_bits[..NUMERIC_LEN].to_vec());
 
         let numeric_zero_r_0 = RingElm::from( bits_to_u32(&zero_r_bits[NUMERIC_LEN..]) );
@@ -102,7 +102,7 @@ fn setup(input_size:usize, input_bits:usize){
         // let k0Clone = k0.clone();
         // let k1Clone = k1.clone();
         // println!("partial_data={:?}", partial_data);
-        // // partial_data[3] ^= true;
+        // partial_data[3] ^= true;
 
         // let y_fnzc0: BinElm = k0Clone.eval(&partial_data);
         // println!("y_fnzc0={:?}", y_fnzc0);

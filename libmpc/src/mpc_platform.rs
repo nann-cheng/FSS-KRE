@@ -66,7 +66,7 @@ impl NetInterface{
             std::process::exit(-1);
         }
         else{
-            println!("Write to partner {} bytes.", xmsg_len);
+            // println!("Write to partner {} bytes.", xmsg_len);
         } // send message to the partner
 
         match  self.reader.read_exact(&mut buf[0..xmsg_len]).await{
@@ -80,7 +80,7 @@ impl NetInterface{
             }  
             Ok(n) => {
                 assert_eq!(n, xmsg_len);
-                println!("Receive {} bytes from partner.", n);
+                // println!("Receive {} bytes from partner.", n);
             }        
         }     
         let mut r = msg; //save the msg
@@ -101,7 +101,7 @@ impl NetInterface{
             std::process::exit(-1);
         }
         else{
-            println!("Write to partner {} bytes.", xmsg_len);
+            // println!("Write to partner {} bytes.", xmsg_len);
         } // send message to the partner
 
         match  self.reader.read_exact(&mut buf[0..xmsg_len]).await{
@@ -115,7 +115,7 @@ impl NetInterface{
             }  
             Ok(n) => {
                 assert_eq!(n, xmsg_len);
-                println!("Receive {} bytes from partner.", n);
+                // println!("Receive {} bytes from partner.", n);
             }        
         }     
         let mut r = msg; //save the msg
@@ -140,7 +140,7 @@ impl NetInterface{
             std::process::exit(-1);
         }
         else{
-            println!("Write to partner {} bytes.", xmsg_len);
+            // println!("Write to partner {} bytes.", xmsg_len);
         } // send message to the partner
 
         match  self.reader.read_exact(&mut buf[0..xmsg_len]).await{
@@ -154,7 +154,7 @@ impl NetInterface{
             }     
             Ok(n) => {
                 assert_eq!(n, xmsg_len);
-                println!("Receive {} bytes from partner.", n);
+                // println!("Receive {} bytes from partner.", n);
             }        
         }
 

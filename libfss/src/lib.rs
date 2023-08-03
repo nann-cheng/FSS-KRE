@@ -1,27 +1,76 @@
 pub mod prg;
+pub mod idpf;
 pub mod dpf;
 pub mod beavertuple;
 pub const NUMERIC_LEN: usize = 32usize;
 
-
 pub const INPUT_SIZE: usize = 3usize;
 pub const INPUT_BITS: usize = 5usize;
-// pub mod fastfield;
-// pub mod mpc;
-// pub mod sketch;
 
 #[macro_use]
 extern crate lazy_static;
 
-// mod field;
-// pub use crate::field::Dummy;
-// pub use crate::field::FieldElm;
 
 mod ring;
 pub use crate::ring::RingElm;
 
 mod binary;
 pub use crate::binary::BinElm;
+
+
+trait TupleMapToExt<T, U> {
+    type Output;
+    fn map<F: FnMut(&T) -> U>(&self, f: F) -> Self::Output;
+}
+
+type TupleMutIter<'a, T> =
+    std::iter::Chain<std::iter::Once<(bool, &'a mut T)>, std::iter::Once<(bool, &'a mut T)>>;
+ trait TupleExt<T> {
+    fn map_mut<F: Fn(&mut T)>(&mut self, f: F);
+    fn get(&self, val: bool) -> &T;
+    fn get_mut(&mut self, val: bool) -> &mut T;
+    fn iter_mut(&mut self) -> TupleMutIter<T>;
+}
+
+impl<T, U> TupleMapToExt<T, U> for (T, T) {
+    type Output = (U, U);
+
+    #[inline(always)]
+    fn map<F: FnMut(&T) -> U>(&self, mut f: F) -> Self::Output {
+        (f(&self.0), f(&self.1))
+    }
+}
+
+impl<T> TupleExt<T> for (T, T) {
+    #[inline(always)]
+    fn map_mut<F: Fn(&mut T)>(&mut self, f: F) {
+        f(&mut self.0);
+        f(&mut self.1);
+    }
+
+    #[inline(always)]
+    fn get(&self, val: bool) -> &T {
+        match val {
+            false => &self.0,
+            true => &self.1,
+        }
+    }
+
+    #[inline(always)]
+    fn get_mut(&mut self, val: bool) -> &mut T {
+        match val {
+            false => &mut self.0,
+            true => &mut self.1,
+        }
+    }
+
+    fn iter_mut(&mut self) -> TupleMutIter<T> {
+        std::iter::once((false, &mut self.0)).chain(std::iter::once((true, &mut self.1)))
+    }
+}
+
+
+
 
 // Additive group, such as (Z_n, +)
 pub trait Group {
@@ -129,7 +178,6 @@ pub fn bits_to_u8_BE(bits: &[bool]) -> u8 {
     out
 }
 
-
 pub fn u64_to_bits(input: u64) -> Vec<bool> {
 
     let mut out: Vec<bool> = Vec::new();
@@ -137,10 +185,8 @@ pub fn u64_to_bits(input: u64) -> Vec<bool> {
         let bit = (input & (1 << i)) != 0;
         out.push(bit);
     }
-
     out
 }
-
 
 pub fn string_to_bits(s: &str) -> Vec<bool> {
     let mut bits = vec![];

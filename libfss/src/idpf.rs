@@ -4,6 +4,9 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::mem;
 
+use crate::TupleExt;
+use crate::TupleMapToExt;
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct CorWord<T> {
     seed: prg::PrgSeed,
@@ -12,7 +15,7 @@ struct CorWord<T> {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct DPFKey<T> {
+pub struct IDPFKey<T> {
     key_idx: bool,
     root_seed: prg::PrgSeed,
     cor_words: Vec<CorWord<T>>,
@@ -23,58 +26,6 @@ pub struct EvalState {
     level: usize,
     seed: prg::PrgSeed,
     bit: bool,
-}
-
-trait TupleMapToExt<T, U> {
-    type Output;
-    fn map<F: FnMut(&T) -> U>(&self, f: F) -> Self::Output;
-}
-
-type TupleMutIter<'a, T> =
-    std::iter::Chain<std::iter::Once<(bool, &'a mut T)>, std::iter::Once<(bool, &'a mut T)>>;
-
-trait TupleExt<T> {
-    fn map_mut<F: Fn(&mut T)>(&mut self, f: F);
-    fn get(&self, val: bool) -> &T;
-    fn get_mut(&mut self, val: bool) -> &mut T;
-    fn iter_mut(&mut self) -> TupleMutIter<T>;
-}
-
-impl<T, U> TupleMapToExt<T, U> for (T, T) {
-    type Output = (U, U);
-
-    #[inline(always)]
-    fn map<F: FnMut(&T) -> U>(&self, mut f: F) -> Self::Output {
-        (f(&self.0), f(&self.1))
-    }
-}
-
-impl<T> TupleExt<T> for (T, T) {
-    #[inline(always)]
-    fn map_mut<F: Fn(&mut T)>(&mut self, f: F) {
-        f(&mut self.0);
-        f(&mut self.1);
-    }
-
-    #[inline(always)]
-    fn get(&self, val: bool) -> &T {
-        match val {
-            false => &self.0,
-            true => &self.1,
-        }
-    }
-
-    #[inline(always)]
-    fn get_mut(&mut self, val: bool) -> &mut T {
-        match val {
-            false => &mut self.0,
-            true => &mut self.1,
-        }
-    }
-
-    fn iter_mut(&mut self) -> TupleMutIter<T> {
-        std::iter::once((false, &mut self.0)).chain(std::iter::once((true, &mut self.1)))
-    }
 }
 
 fn gen_cor_word<W>(bit: bool, value: W, bits: &mut (bool, bool), seeds: &mut (prg::PrgSeed, prg::PrgSeed)) -> CorWord<W>
@@ -129,12 +80,9 @@ fn gen_cor_word<W>(bit: bool, value: W, bits: &mut (bool, bool), seeds: &mut (pr
 }
 
 
-impl<T> DPFKey<T>
-where
-    T: prg::FromRng + Clone + Group + std::fmt::Debug
+impl<T> IDPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug
 {
-
-    pub fn gen(alpha_bits: &[bool], values: &[T]) -> (DPFKey<T>, DPFKey<T>) {
+    pub fn gen(alpha_bits: &[bool], values: &[T]) -> (IDPFKey<T>, IDPFKey<T>) {
         debug_assert!(alpha_bits.len() == values.len() );
 
         let root_seeds = (prg::PrgSeed::random(), prg::PrgSeed::random());
@@ -150,12 +98,12 @@ where
         }
 
         (
-            DPFKey::<T> {
+            IDPFKey::<T> {
                 key_idx: false,
                 root_seed: root_seeds.0,
                 cor_words: cor_words.clone(),
             },
-            DPFKey::<T> {
+            IDPFKey::<T> {
                 key_idx: true,
                 root_seed: root_seeds.1,
                 cor_words,
@@ -223,7 +171,7 @@ where
         let bits = crate::string_to_bits(s);
         let values = vec![T::one(); bits.len()-1];
 
-        DPFKey::gen(&bits, &values)
+        IDPFKey::gen(&bits, &values)
     }
 
     pub fn domain_size(&self) -> usize {
@@ -250,38 +198,38 @@ where
 
 #[cfg(test)]
 mod tests {
-    // use super::*;
-    // use crate::ring::*;
-    // use crate::Group;
+    use super::*;
+    use crate::ring::*;
+    use crate::Group;
 
-    // #[test]
-    // fn verify() {
-    //     let nbits = 3usize;
-    //     let alpha = crate::u32_to_bits(nbits, 7);
+    #[test]
+    fn evalCheck() {
+        let nbits = 3usize;
+        let alpha = crate::u32_to_bits(nbits, 7);
 
-    //     let values = FieldElm::from(1u32).to_vec(nbits);
+        let values = RingElm::from(1u32).to_vec(nbits);
 
-    //     let (dpf_key0, dpf_key1) = DPFKey::gen(&alpha, &values);
+        let (dpf_key0, dpf_key1) = IDPFKey::gen(&alpha, &values);
 
-    //     let mut state0 = dpf_key0.eval_init();
-    //     let mut state1 = dpf_key1.eval_init();
+        let mut state0 = dpf_key0.eval_init();
+        let mut state1 = dpf_key1.eval_init();
 
-    //     let testNumber = crate::u32_to_bits(nbits, 7);
+        let testNumber = crate::u32_to_bits(nbits, 7);
 
-    //     //Prefix trial test
-    //     for i in 0..nbits{
-    //         let bit = testNumber[i];
-    //         let (state_new0, word0) = dpf_key0.eval_bit(&state0, bit);
-    //         state0 = state_new0;
+        //Prefix trial test
+        for i in 0..nbits{
+            let bit = testNumber[i];
+            let (state_new0, word0) = dpf_key0.eval_bit(&state0, bit);
+            state0 = state_new0;
 
-    //         let (state_new1, word1) = dpf_key1.eval_bit(&state1, bit);
-    //         state1 = state_new1;
+            let (state_new1, word1) = dpf_key1.eval_bit(&state1, bit);
+            state1 = state_new1;
 
-    //         let mut sum = FieldElm::zero();
-    //         sum.add(&word0);
-    //         sum.add(&word1);
+            let mut sum = RingElm::zero();
+            sum.add(&word0);
+            sum.add(&word1);
 
-    //         assert_eq!(sum, values[i]);
-    //     }
-    // }
+            assert_eq!(sum, values[i]);
+        }
+    }
 }
