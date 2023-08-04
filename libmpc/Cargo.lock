@@ -292,6 +292,7 @@ dependencies = [
  "fss",
  "futures",
  "lazy_static",
+ "serde",
  "tokio",
 ]
 

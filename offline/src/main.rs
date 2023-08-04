@@ -9,10 +9,14 @@ use std::fs::File;
 use bincode::{serialize, deserialize};
 use std::io::prelude::*;
 use beavertuple::BeaverTuple;
+use serde::Serialize;
 
-//const WAN_LATENCY: u128 = 60u128;
-//const LAN_LATENCY: u128 = 1u128;
+const NUMERIC_LEN:usize = 32;
 
+fn write_file<T: serde::ser::Serialize>(path:&str, value:&T){
+    let mut file = File::create(path).expect("create failed");
+    file.write_all(&bincode::serialize(&value).expect("Serialize value error")).expect("Write key error.");
+}
 
 fn setup(input_size:usize, input_bits:usize){
     let seed = PrgSeed::one();
@@ -29,38 +33,31 @@ fn setup(input_size:usize, input_bits:usize){
     for i in 0..input_size{
         let alpha = &r_bits[i*input_bits..(i+1)*input_bits];
         let (k0, k1) = IDPFKey::gen(&alpha, &fix_betas);
-
         dpf_0.push(k0);
         dpf_1.push(k1);
     }
-    let mut f_k0 = File::create("../data/k0.bin").expect("create failed");
-    let mut f_k1 = File::create("../data/k1.bin").expect("create failed");
-    f_k0.write_all(&bincode::serialize(&dpf_0).expect("Serialize key error")).expect("Write key error.");
-    f_k1.write_all(&bincode::serialize(&dpf_1).expect("Serialize key error")).expect("Write key error.");
+    write_file("../data/k0.bin", &dpf_0);
+    write_file("../data/k1.bin", &dpf_1);
 
     let r_bits_0 = stream.next_bits(input_bits*input_size);
     let r_bits_1 = bits_Xor(&r_bits, &r_bits_0);
-    
-    let mut f_a0 = File::create("../data/a0.bin").expect("create failed");
-    let mut f_a1 = File::create("../data/a1.bin").expect("create failed");
-    f_a0.write_all(&bincode::serialize(&r_bits_0).expect("Serialize alpha error")).expect("Write alpha error.");
-    f_a1.write_all(&bincode::serialize(&r_bits_1).expect("Serialize alpha error")).expect("Write alpha error.");
+
+    write_file("../data/a0.bin", &r_bits_0);
+    write_file("../data/a1.bin", &r_bits_1);
+
 
     //Offline-Step-3. Random daBits for masking
     let q_boolean = stream.next_bits(input_bits);
     // println!("q_boolean is: {} ",vec_bool_to_string(&q_boolean));
     let q_boolean_0 = stream.next_bits(input_bits);
     let q_boolean_1 = bits_Xor(&q_boolean, &q_boolean_0);
-    let mut f_qb0 = File::create("../data/qb0.bin").expect("create failed");
-    let mut f_qb1 = File::create("../data/qb1.bin").expect("create failed");
-    f_qb0.write_all(&bincode::serialize(&q_boolean_0).expect("Serialize q-bool-share error")).expect("Write q-bool-share error.");
-    f_qb1.write_all(&bincode::serialize(&q_boolean_1).expect("Serialize q-bool-share error")).expect("Write q-bool-share error.");
+    write_file("../data/qb0.bin", &q_boolean_0);
+    write_file("../data/qb1.bin", &q_boolean_1);
 
 
     let mut q_numeric = Vec::new();
     let mut q_numeric_0 = Vec::new();
     let mut q_numeric_1 = Vec::new();
-    
     for i in 0..input_bits{
         let mut q_i = RingElm::zero();
         if q_boolean[i]{
@@ -71,10 +68,10 @@ fn setup(input_size:usize, input_bits:usize){
         q_numeric_0.push(q_i_0);
         q_numeric_1.push(q_i_1);
     }
-    let mut f_qa0 = File::create("../data/qa0.bin").expect("create failed");
-    let mut f_qa1 = File::create("../data/qa1.bin").expect("create failed");
-    f_qa0.write_all(&bincode::serialize(&q_numeric_0).expect("Serialize q-a-share error")).expect("Write q-a-share error.");
-    f_qa1.write_all(&bincode::serialize(&q_numeric_1).expect("Serialize q-a-share error")).expect("Write q-a-share error.");
+    write_file("../data/qa0.bin", &q_numeric_0);
+    write_file("../data/qa1.bin", &q_numeric_1);
+
+
 
     //Offline-Step-4. Random DPFs for zeroCheck, input_bits required in total
     let mut zero_dpf_0: Vec<DPFKey<BinElm>> = Vec::new();
@@ -119,15 +116,12 @@ fn setup(input_size:usize, input_bits:usize){
         zero_dpf_r0.push(numeric_zero_r_0);
         zero_dpf_r1.push(numeric_zero_r_1);
     }
+    write_file("../data/zc_a0.bin", &zero_dpf_r0);
+    write_file("../data/zc_a1.bin", &zero_dpf_r1);
+    write_file("../data/zc_k0.bin", &zero_dpf_0);
+    write_file("../data/zc_k1.bin", &zero_dpf_1);
 
-    let mut f_zc_a0 = File::create("../data/zc_a0.bin").expect("create failed");
-    let mut f_zc_a1 = File::create("../data/zc_a1.bin").expect("create failed");
-    let mut f_zc_k0 = File::create("../data/zc_k0.bin").expect("create failed");
-    let mut f_zc_k1 = File::create("../data/zc_k1.bin").expect("create failed");
-    f_zc_a0.write_all(&bincode::serialize(&zero_dpf_r0).expect("Serialize zc-key-share error")).expect("Write zc-key-share error.");
-    f_zc_a1.write_all(&bincode::serialize(&zero_dpf_r1).expect("Serialize zc-key-share error")).expect("Write zc-key-share error.");
-    f_zc_k0.write_all(&bincode::serialize(&zero_dpf_0).expect("Serialize zc-key-share error")).expect("Write zc-key-share error.");
-    f_zc_k1.write_all(&bincode::serialize(&zero_dpf_1).expect("Serialize zc-key-share error")).expect("Write zc-key-share error.");
+
     // println!("{:.5?} seconds for offline phase.", start.elapsed());
 
     let mut beavertuples0: Vec<BeaverTuple> = Vec::new();
@@ -170,17 +164,14 @@ fn setup(input_size:usize, input_bits:usize){
         beavertuples0.push(beaver0);
         beavertuples1.push(beaver1);
     }
-    let mut f_beaver0 = File::create("../data/beaver0.bin").expect("create failed");
-    let mut f_beaver1 = File::create("../data/beaver1.bin").expect("create failed");
-    f_beaver0.write_all(&bincode::serialize(&beavertuples0).expect("Serialize beaver0 error")).expect("Write beaver0 error.");
-    f_beaver1.write_all(&bincode::serialize(&beavertuples1).expect("Serialize beaver1 error")).expect("Write beaver1 error.");
-
+    
+    write_file("../data/beaver0.bin", &beavertuples0);
+    write_file("../data/beaver1.bin", &beavertuples1);
 }
 
 fn main()
 {
-    setup(INPUT_SIZE, INPUT_BITS);
-    // setup(10, 32);
+    setup(3, 5);
 }
 
 #[cfg(test)]
@@ -195,7 +186,7 @@ mod tests {
     use fss::beavertuple::*;
     
     #[test]
-    fn it_works() {
+    fn io_works() {
         const input_size: usize = 10;
         const input_bits: usize = 32;
 
@@ -355,8 +346,5 @@ mod tests {
             assert_eq!(ab, c);
         }
     }
-    
-    
-
 }
 
