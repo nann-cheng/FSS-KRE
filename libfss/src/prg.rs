@@ -61,6 +61,12 @@ pub struct PrgOutput {
     pub seeds: (PrgSeed, PrgSeed),
 }
 
+pub struct PrgOutputExt {
+    pub bits: (bool, bool),
+    pub seeds: (PrgSeed, PrgSeed),
+    pub veeds: (PrgSeed, PrgSeed),
+}
+
 pub struct ConvertOutput<T: FromRng> {
     pub seed: PrgSeed,
     pub word: T,
@@ -133,6 +139,30 @@ impl PrgSeed {
 
     pub fn expand(self: &PrgSeed) -> PrgOutput {
         self.expand_dir(true, true)
+    }
+
+    pub fn long_expand(self: &PrgSeed) -> PrgOutputExt {
+        FIXED_KEY_STREAM.with(|s_in| {
+            let mut key_short = self.key;
+
+            // Zero out first two bits and use for output
+            key_short[0] &= 0xFC;
+            let mut s = s_in.borrow_mut();
+            s.set_key(&key_short);
+
+            let mut out = PrgOutputExt {
+                bits: ((key_short[0] & 0x1) == 0, (key_short[0] & 0x2) == 0),
+                seeds: (PrgSeed::zero(), PrgSeed::zero()),
+                veeds: (PrgSeed::zero(), PrgSeed::zero()),
+            };
+            s.fill_bytes(&mut out.seeds.0.key);
+            s.fill_bytes(&mut out.veeds.0.key);
+        
+            s.fill_bytes(&mut out.seeds.1.key);
+            s.fill_bytes(&mut out.veeds.1.key);
+
+            out
+        })
     }
 
     pub fn convert<T: FromRng + crate::Group>(self: &PrgSeed) -> ConvertOutput<T> {

@@ -157,7 +157,6 @@ impl OfflineInfomation{
     }
 }
 
-
 pub struct MPCParty{
     offlinedata: OfflineInfomation,
     //x_share: Vec<bool>,
@@ -198,7 +197,7 @@ pub async fn bitwise_max(p: &mut MPCParty, x_bits: &Vec<bool>)->Vec<bool>{
         for j in 0..n{
             let t_share = x_bits[i*n + j] ^ p.offlinedata.a_share[i*n + j] ^ p.offlinedata.qb_share[j]; //x[i][j]^qb[j]
             mask_bits.push(t_share);
-        }        
+        }
     }
    
     /*Line 3: The reveal function for a bunch of bool data*/ 
@@ -383,9 +382,10 @@ pub async fn bitwise_max(p: &mut MPCParty, x_bits: &Vec<bool>)->Vec<bool>{
         let y_fnzc: BinElm = p.offlinedata.zc_k_share[i].eval(&vec_eval);
         // println!("y_fnzc={:?}", y_fnzc);
         cmp_bits[i] = y_fnzc.to_Bool();
-        /*if is_server{
+        if is_server{
             cmp_bits[i] = !cmp_bits[i]
         }
+        /*
         println!("cmp_share={}", cmp_bits[i]);*/
         //end Line 12 
 
