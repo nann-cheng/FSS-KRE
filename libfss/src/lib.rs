@@ -2,8 +2,8 @@ pub mod prg;
 pub mod idpf;
 pub mod dpf;
 pub mod dcf;
+pub mod ic;
 pub mod beavertuple;
-
 
 #[macro_use]
 extern crate lazy_static;
@@ -112,19 +112,16 @@ pub fn vec_bool_to_string(vec_bool: &Vec<bool>) -> String {
     string
 }
 
-pub fn u32_to_bits_BE(nbits: usize, input: u32) -> String {
+pub fn u32_to_bits_BE(nbits: usize, input: u32) -> Vec<bool> {
     assert!(nbits <= 32);
 
-    let mut string = String::new();
+    let mut out: Vec<bool> = Vec::new();
     for i in 0..nbits {
-        if (input & (1 << nbits-1-i)) != 0{
-            string.push('1');
-        }else {
-            string.push('0');
-        }
+        let bit = (input & (1 << (nbits-1-i)) ) != 0;
+        out.push(bit);
     }
-
-    string
+    
+    out
 }
 
 pub fn u32_to_bits(nbits: usize, input: u32) -> Vec<bool> {

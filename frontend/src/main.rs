@@ -14,8 +14,8 @@ use std::env;
 // pub const TEST_SIMULATE_NETWORK: bool = false;
 // pub const TEST_REAL_NETWORK: bool = false;
 
-const INPUT_SIZE: usize = 2usize;
-const INPUT_BITS: usize = 2usize;
+const INPUT_SIZE: usize = 3usize;
+const INPUT_BITS: usize = 5usize;
 
 #[tokio::main]
 async fn main() {

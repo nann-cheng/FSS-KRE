@@ -17,12 +17,13 @@ impl RingElm {
     }
 
     pub fn print(&self){
-        println!("me is {}", self.value);
+        println!("I am {}", self.value);
     }
 
     pub fn to_u32(&self) -> Option<u32> {
         self.value.to_u32()
     }
+
 }
 
 /*******/

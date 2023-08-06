@@ -1,10 +1,6 @@
 
-// use num::ToPrimitive;
 use serde::Deserialize;
 use serde::Serialize;
-// use std::cmp::Ordering;
-// use std::convert::TryInto;
-// use std::u32;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BinElm {
@@ -75,10 +71,6 @@ impl crate::Group for BinElm {
         self.value = self.value && other.value;
     }
 
-    //  #[inline]
-    // fn negate(&mut self) {
-    //     self.value ^= true;
-    // }
 
     #[inline]
     fn negate(&mut self) {

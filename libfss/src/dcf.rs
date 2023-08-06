@@ -1,3 +1,4 @@
+/*This's a strict less than dcf implementation*/
 use crate::prg;
 use crate::Group;
 use serde::Deserialize;
@@ -258,7 +259,7 @@ mod tests {
         }
 
         {
-            let greater = vec![true,false,true];
+            let greater = vec![true,false,false];
 
             let mut evalResult = BinElm::zero();
 

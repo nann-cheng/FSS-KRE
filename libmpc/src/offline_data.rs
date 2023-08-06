@@ -77,7 +77,7 @@ impl BasicOffline{
         }
     }
 
-    pub fn genData(&self,seed: &PrgSeed,input_size: usize, input_bits: usize){
+    pub fn genData(&self,seed: &PrgSeed,input_size: usize, input_bits: usize, beaver_amount: usize){
         let mut stream = FixedKeyPrgStream::new();
         stream.set_key(&seed.key);
         //Offline-Step-1. Set IDPF Parameters
@@ -121,7 +121,7 @@ impl BasicOffline{
         write_file("../data/qa0.bin", &q_numeric_0);
         write_file("../data/qa1.bin", &q_numeric_1);
 
-        self.genBeaver(&seed, input_bits*2);
+        self.genBeaver(&seed, beaver_amount);
     }
 
     pub fn genBeaver(&self, seed: &PrgSeed, size:usize){
@@ -199,7 +199,7 @@ impl BitMaxOffline{
     }
 
     pub fn genData(&self, seed: &PrgSeed,input_size: usize, input_bits: usize){
-        self.base.genData(&seed,input_size,input_bits);
+        self.base.genData(&seed,input_size,input_bits, input_bits*2);
         let mut stream = FixedKeyPrgStream::new();
         stream.set_key(&seed.key);
 
@@ -221,7 +221,7 @@ impl BitMaxOffline{
             let numeric_zero_r_0 = RingElm::from( bits_to_u32(&zero_r_bits[NUMERIC_LEN..]) );
             numeric_zero_r_1.sub(&numeric_zero_r_0);
             // let zero_betas: Vec<BinElm> = BinElm::from(false).to_vec(NUMERIC_LEN);
-            let zero_beta: BinElm = BinElm::zero();
+            let zero_beta: BinElm = BinElm::one();
             let (k0, k1) = DPFKey::gen(&zero_r_bits[..NUMERIC_LEN], &zero_beta);
 
             zero_dpf_0.push(k0);
@@ -236,16 +236,26 @@ impl BitMaxOffline{
     }
 }
 
+
+pub struct BitKreOffline{
+    pub base: BasicOffline,
+    pub zc_k_share: Vec<DPFKey<BinElm>>,//dpf keys for zero_check
+    pub zc_a_share: Vec<RingElm>,
+}
+
+
 #[cfg(test)]
 mod tests {
-    // use ;
+    use crate::offline_data::BitMaxOffline;
+    use fss::prg::PrgSeed;
 
-    // #[test]
-    // fn io_check() {
-    //     let mut bitMax = BitMaxOffline::new(0u8);
-    //     let seed = PrgSeed::random();
+    #[test]
+    fn io_check() {
+        let mut bitMax = BitMaxOffline::new(0u8);
+        // let seed = PrgSeed::random();
+        let seed = PrgSeed::one();
 
-    //     bitMax.genData(&seed,3usize,5usize);
-    //     bitMax.loadData();
-    // }
+        bitMax.genData(&seed,3usize,5usize);
+        bitMax.loadData();
+    }
 }
