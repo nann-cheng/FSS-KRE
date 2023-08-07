@@ -3,6 +3,7 @@ pub mod idpf;
 pub mod dpf;
 pub mod dcf;
 pub mod ic;
+pub mod condEval;
 pub mod beavertuple;
 
 #[macro_use]

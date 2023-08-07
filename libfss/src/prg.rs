@@ -207,6 +207,22 @@ impl FixedKeyPrgStream {
         self.have = AES_BLOCK_SIZE;
     }
 
+    pub fn next_bytes(&mut self,len: usize) -> Vec<u8> {
+        let mut out: Vec<u8> = Vec::new();
+
+        let block_num = len/8;
+
+        for i in 0..block_num+1{
+            let tmp = self.next_u64();
+            for j in 0..8{
+                let byte = (tmp >> 8*j) as u8;
+                out.push(byte);
+            }
+        }
+
+        out[..len].to_vec()
+    }
+
     pub fn next_bits(&mut self,len: usize) -> Vec<bool> {
         let mut out: Vec<bool> = Vec::new();
 

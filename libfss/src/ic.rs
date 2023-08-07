@@ -1,13 +1,16 @@
 use crate::prg::{PrgSeed,FixedKeyPrgStream};
 use super::{bits_to_u32_BE,u32_to_bits_BE,RingElm,BinElm,dcf::*};
 use crate::Group;
+use std::mem;
 use serde::Deserialize;
 use serde::Serialize;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ICKey{
-    key_idx: bool,
+    pub key_idx: bool,
     dcf_key: DCFKey<BinElm>,
+    p: RingElm,
+    q: RingElm,
     word: BinElm,
 }
 
@@ -15,8 +18,6 @@ pub struct ICKey{
 impl ICKey
 {
     pub fn gen(alpha_bits: &[bool], p_bound:& RingElm, q_bound:& RingElm) -> (ICKey, ICKey) {
-        
-
         let gamma_in = RingElm::from( bits_to_u32_BE(&alpha_bits) );
 
         let mut gamma = gamma_in.clone();
@@ -69,23 +70,27 @@ impl ICKey
             ICKey{
                 key_idx: false,
                 dcf_key: key0,
+                p: p_bound.clone(),
+                q: q_bound.clone(),
                 word: z_0,
             },
             ICKey{
                 key_idx: true,
                 dcf_key: key1,
+                p: p_bound.clone(),
+                q: q_bound.clone(),
                 word: z_1,
             }
         )
     }
 
-    pub fn eval(&self, x:& RingElm, p_bound:& RingElm, q_bound:& RingElm) -> BinElm {
-        let mut q_prime = q_bound.clone();
+    pub fn eval(&self, x:& RingElm) -> BinElm {
+        let mut q_prime = self.q.clone();
         q_prime.add(&RingElm::one());
 
         let mut x_p = x.clone();
         x_p.add(&RingElm::from(u32::MAX));
-        x_p.sub(p_bound);
+        x_p.sub(&self.p);
 
         let mut x_q_prime = x.clone();
         x_q_prime.add(&RingElm::from(u32::MAX));
@@ -115,7 +120,7 @@ impl ICKey
         output_word.sub(&s_p);
 
         if self.key_idx{
-            if x>p_bound{
+            if x>&self.p{
                 output_word.add(&BinElm::one());
             }
 
@@ -126,6 +131,16 @@ impl ICKey
 
         output_word
     }
+
+
+    pub fn key_size(&self) -> usize {
+        let mut keySize = 0usize;
+        keySize += mem::size_of_val(&self.key_idx);
+        keySize += mem::size_of_val(&self.dcf_key);
+        keySize += mem::size_of_val(&self.word);
+        keySize
+    }
+
 }
 
 #[cfg(test)]
@@ -160,10 +175,10 @@ mod tests {
 
                 let mut evalResult = BinElm::zero();
 
-                let word0 = key0.eval(&alpha_numeric,&p_bound, &q_bound);
+                let word0 = key0.eval(&alpha_numeric);
                 evalResult.add(&word0);
 
-                let word1 = key1.eval(&alpha_numeric,&p_bound, &q_bound);
+                let word1 = key1.eval(&alpha_numeric);
                 evalResult.add(&word1);
 
                 assert_eq!(evalResult, BinElm::one());
@@ -178,10 +193,10 @@ mod tests {
 
                 let mut evalResult = BinElm::zero();
 
-                let word0 = key0.eval(&alpha_numeric,&p_bound, &q_bound);
+                let word0 = key0.eval(&alpha_numeric);
                 evalResult.add(&word0);
 
-                let word1 = key1.eval(&alpha_numeric,&p_bound, &q_bound);
+                let word1 = key1.eval(&alpha_numeric);
                 evalResult.add(&word1);
 
                 assert_eq!(evalResult, BinElm::zero());
