@@ -1,15 +1,43 @@
-use crate::Share;
+// use crate::Share;
 use num::ToPrimitive;
 use serde::Deserialize;
 use serde::Serialize;
 use std::cmp::Ordering;
 use std::convert::TryInto;
 use std::u32;
+use std::ops::{Add, Sub, Mul};
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone,Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RingElm {
     value: u32,
 }
+
+impl Add for RingElm {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self::Output {
+        RingElm {
+            value: self.value.wrapping_add( rhs.value ),
+        }
+    }
+}
+impl Sub for RingElm {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        RingElm {
+            value: self.value.wrapping_sub( rhs.value ),
+        }
+    }
+}
+impl Mul for RingElm {
+    type Output = Self;
+    fn mul(self, rhs: Self) -> Self::Output {
+        RingElm {
+            value: self.value.wrapping_mul( rhs.value ),
+        }
+    }
+}
+
 
 impl RingElm {
     pub fn to_vec(&self, len: usize) -> Vec<RingElm> {
@@ -24,6 +52,10 @@ impl RingElm {
         self.value.to_u32()
     }
 
+    pub fn to_u8_vec(&self) -> Vec<u8> {
+        self.value.to_be_bytes().to_vec()
+    }
+
 }
 
 /*******/
@@ -32,6 +64,18 @@ impl From<u32> for RingElm {
     fn from(inp: u32) -> Self {
         RingElm {
             value: inp,
+        }
+    }
+}
+
+impl From<Vec<u8>> for RingElm {
+    #[inline]
+    fn from(bytes:Vec<u8>) -> Self {
+        if bytes.len() != 4 {
+            panic!("Invalid conversion: Vec<u8> must be exactly 4 bytes");
+        }
+        RingElm {
+            value: u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
         }
     }
 }
@@ -89,7 +133,8 @@ impl crate::prg::FromRng for RingElm {
     }
 }
 
-impl crate::Share for RingElm {}
+impl crate::Share for RingElm {
+}
 
 impl<T> crate::Group for (T, T) where T: crate::Group + Clone,
 {

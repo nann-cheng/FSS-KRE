@@ -4,19 +4,18 @@ use crate::Group;
 use serde::Deserialize;
 use serde::Serialize;
 use bincode::*;
-use serde::de::DeserializeOwned;
+// use serde::de::DeserializeOwned;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CondEvalKey{
-    cipher_0: Vec<u8>,
-    cipher_1: Vec<u8>,
-    sk_0: Vec<u8>,
-    sk_1: Vec<u8>,
-    pi: bool,
-    alpha: RingElm,
+    pub cipher_0: Vec<u8>,
+    pub cipher_1: Vec<u8>,
+    pub sk_0: Vec<u8>,
+    pub sk_1: Vec<u8>,
+    pub pi: bool,
+    pub alpha: RingElm,
 }
 
-// TODO: Not sure if memory size is as the same as serilization size
 impl CondEvalKey
 {
     pub fn gen() -> (CondEvalKey, CondEvalKey) {
@@ -37,7 +36,7 @@ impl CondEvalKey
 
         let alpha_bits = stream.next_bits(32usize);
         let (p_bound,q_bound) = (RingElm::zero(), RingElm::from((1<<31)-1));
-        let (mut key0,  mut key1) = ICKey::gen(&alpha_bits,&p_bound, &q_bound);
+        let ( key0,  mut key1) = ICKey::gen(&alpha_bits,&p_bound, &q_bound);
         key1.key_idx=false;
 
         
@@ -121,9 +120,34 @@ impl CondEvalKey
 
     pub fn eval(&self, x:& RingElm,pointer:bool, sk:& Vec<u8>) -> BinElm {
         let correctCipher = if pointer{ &self.cipher_1} else {&self.cipher_0};
+
+
         let decrypted:Vec<u8> = correctCipher.iter().zip(sk.iter()).map(|(&a, &b)| a ^ b).collect();
         println!("sk size is: {}",sk.len());
         println!("correctCipher size is: {}",correctCipher.len());
+
+        match bincode::deserialize(&decrypted[..decrypted.len()-1]){
+            Ok(value) => {
+                // m_fssKey = value;
+                let mut m_fssKey:ICKey= value;
+                let m_idx:u8 = decrypted[decrypted.len()-1];
+                m_fssKey.key_idx = if m_idx==0{ false} else {true};
+                m_fssKey.eval(x)
+            },
+            Err(e) => {
+                println!("Error deserialize file: {}", e);
+                BinElm::zero()
+                },  // Or handle the error as needed
+        }
+    }
+
+    pub fn eval1(&self, x:& RingElm, pointer_sk:& Vec<u8>) -> BinElm {
+        let pointer = pointer_sk[0] != 0u8;
+        let sk  = pointer_sk[1..].to_vec();
+        let correctCipher = if pointer{ &self.cipher_1} else {&self.cipher_0};
+        let decrypted:Vec<u8> = correctCipher.iter().zip(sk.iter()).map(|(&a, &b)| a ^ b).collect();
+        // println!("sk size is: {}",sk.len());
+        // println!("correctCipher size is: {}",correctCipher.len());
 
         match bincode::deserialize(&decrypted[..decrypted.len()-1]){
             Ok(value) => {

@@ -51,9 +51,7 @@ fn gen_cor_word(bit: bool, bits: &mut (bool, bool), seeds: &mut (prg::PrgSeed, p
     cw
 }
 
-impl<T> DPFKey<T>
-where
-    T: prg::FromRng + Clone + Group + std::fmt::Debug
+impl<T> DPFKey<T> where T: prg::FromRng + Clone + Group + std::fmt::Debug
 {
     pub fn gen(alpha_bits: &[bool], value:&T) -> (DPFKey<T>, DPFKey<T>) {
         // let root_seeds = (prg::PrgSeed::zero(), prg::PrgSeed::one());

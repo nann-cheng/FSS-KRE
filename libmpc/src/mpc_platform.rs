@@ -162,7 +162,36 @@ impl NetInterface{
             let e = RingElm::from(u32::from_be_bytes(ybuf));
             r[i].add(&e);
         }
-       
         r     
     }
+
+    pub async fn exchange_byte_vec(&mut self, msg: &Vec<u8>) -> Vec<u8>{
+        let msg_len = msg.len();
+        
+        let mut buf: Vec<u8> = vec![0; msg_len];
+        if let Err(err) = self.writer.write_all(&msg.as_slice()).await{
+            eprintln!("Write to partner failed:{}", err);
+            std::process::exit(-1);
+        }
+        else{
+            // println!("Write to partner {} bytes.", xmsg_len);
+        } // send message to the partner
+
+        match  self.reader.read_exact(&mut buf[0..msg_len]).await{
+            Err(e) => {
+                eprintln!("read from client error: {}", e);
+                std::process::exit(-1);
+            }
+            Ok(0) => {
+                println!("client closed.");
+                std::process::exit(-1);
+            }     
+            Ok(n) => {
+                assert_eq!(n, msg_len);
+                // println!("Receive {} bytes from partner.", n);
+            }        
+        }
+        buf   
+    }
+
 }

@@ -1,6 +1,7 @@
 use fss::beavertuple::BeaverTuple;
 use fss::idpf::*;
 use fss::dpf::*;
+use fss::condEval::CondEvalKey;
 use fss::RingElm;
 use fss::BinElm;
 use fss::Group;
@@ -35,7 +36,6 @@ fn read_file<T: DeserializeOwned>(path: &str) -> Result<T, Error> {
 
 pub struct BasicOffline {
     // seed: PrgSeed,
-    pub idx: u8,
     pub k_share: Vec<IDPFKey<RingElm>>, //idpf keys
     pub a_share: Vec<bool>,  //alpha
 
@@ -46,32 +46,32 @@ pub struct BasicOffline {
 }
 
 impl BasicOffline{
-    pub fn new(index:u8) -> Self{
-        Self{idx:index,k_share: Vec::new(), a_share: Vec::new(), qa_share: Vec::new(), qb_share: Vec::new(), beavers: Vec::new()}
+    pub fn new() -> Self{
+        Self{k_share: Vec::new(), a_share: Vec::new(), qa_share: Vec::new(), qb_share: Vec::new(), beavers: Vec::new()}
     }
 
-    pub fn loadData(&mut self){
-        match read_file(&format!("../data/k{}.bin", self.idx)) {
+    pub fn loadData(&mut self,idx:&u8){
+        match read_file(&format!("../data/k{}.bin", idx)) {
             Ok(value) => self.k_share = value,
             Err(e) => println!("Error reading file: {}", e),  // Or handle the error as needed
         }
 
-        match read_file(&format!("../data/a{}.bin", self.idx)) {
+        match read_file(&format!("../data/a{}.bin", idx)) {
             Ok(value) => self.a_share = value,
             Err(e) => println!("Error reading file: {}", e),  // Or handle the error as needed
         }
 
-        match read_file(&format!("../data/qa{}.bin", self.idx)) {
+        match read_file(&format!("../data/qa{}.bin", idx)) {
             Ok(value) => self.qa_share = value,
             Err(e) => println!("Error reading file: {}", e),  // Or handle the error as needed
         }
 
-        match read_file(&format!("../data/qb{}.bin", self.idx)) {
+        match read_file(&format!("../data/qb{}.bin", idx)) {
             Ok(value) => self.qb_share = value,
             Err(e) => println!("Error reading file: {}", e),  // Or handle the error as needed
         }
 
-        match read_file(&format!("../data/beaver{}.bin", self.idx)) {
+        match read_file(&format!("../data/beaver{}.bin", idx)) {
             Ok(value) => self.beavers = value,
             Err(e) => println!("Error reading file: {}", e),  // Or handle the error as needed
         }
@@ -140,15 +140,15 @@ impl BasicOffline{
 
             let ab0 = RingElm::from( bits_to_u32(&rd_bits[4*NUMERIC_LEN..5*NUMERIC_LEN]) );
 
-            let mut a = RingElm::from(0);
+            let mut a = RingElm::zero();
             a.add(&a0);
             a.add(&a1);
 
-            let mut b = RingElm::from(0);
+            let mut b = RingElm::zero();
             b.add(&b0);
             b.add(&b1);
 
-            let mut ab = RingElm::from(1);
+            let mut ab = RingElm::one();
             ab.mul(&a);
             ab.mul(&b);
 
@@ -157,13 +157,17 @@ impl BasicOffline{
             let beaver0 = BeaverTuple{
                 a: a0,
                 b: b0,
-                ab: ab0
+                ab: ab0,
+                delta_a:RingElm::zero(),
+                delta_b:RingElm::zero(),
             };
 
             let beaver1 = BeaverTuple{
                 a: a1,
                 b: b1,
-                ab: ab
+                ab: ab,
+                delta_a:RingElm::zero(),
+                delta_b:RingElm::zero(),
             };
             beavertuples0.push(beaver0);
             beavertuples1.push(beaver1);
@@ -180,19 +184,19 @@ pub struct BitMaxOffline{
 }
 
 impl BitMaxOffline{
-    pub fn new(index:u8) -> Self{
-        Self{base: BasicOffline::new(index),  zc_k_share: Vec::new(), zc_a_share: Vec::new()}
+    pub fn new() -> Self{
+        Self{base: BasicOffline::new(),  zc_k_share: Vec::new(), zc_a_share: Vec::new()}
     }
 
-    pub fn loadData(&mut self){
-        self.base.loadData();
+    pub fn loadData(&mut self,idx:&u8){
+        self.base.loadData(idx);
 
-        match read_file(&format!("../data/zc_a{}.bin", self.base.idx)) {
+        match read_file(&format!("../data/zc_a{}.bin", idx)) {
             Ok(value) => self.zc_a_share = value,
             Err(e) => println!("Error reading file: {}", e),  //Or handle the error as needed
         }
 
-        match read_file(&format!("../data/zc_k{}.bin", self.base.idx)) {
+        match read_file(&format!("../data/zc_k{}.bin", idx)) {
             Ok(value) => self.zc_k_share = value,
             Err(e) => println!("Error reading file: {}", e),  //Or handle the error as needed
         }
@@ -239,23 +243,60 @@ impl BitMaxOffline{
 
 pub struct BitKreOffline{
     pub base: BasicOffline,
-    pub zc_k_share: Vec<DPFKey<BinElm>>,//dpf keys for zero_check
-    pub zc_a_share: Vec<RingElm>,
+    pub condeval_k_share: Vec<CondEvalKey>,//CondEval keys for lessThan check
+}
+
+impl BitKreOffline{
+    pub fn new() -> Self{
+        Self{base: BasicOffline::new(),  condeval_k_share: Vec::new()}
+    }
+
+    pub fn loadData(&mut self,idx:&u8){
+        self.base.loadData(idx);
+
+        match read_file(&format!("../data/bitwise_kre_k{}.bin", idx)) {
+            Ok(value) => self.condeval_k_share = value,
+            Err(e) => println!("Error reading file: {}", e),  //Or handle the error as needed
+        }
+    }
+
+    pub fn genData(&self, seed: &PrgSeed,input_size: usize, input_bits: usize){
+        self.base.genData(&seed,input_size,input_bits, input_bits*5);
+        let mut stream = FixedKeyPrgStream::new();
+        stream.set_key(&seed.key);
+
+        //Offline-Step-4. Random condEval keys
+        let mut online_k0: Vec<CondEvalKey> = Vec::new();
+        let mut online_k1: Vec<CondEvalKey> = Vec::new();
+        for _ in 0..2*input_bits{
+            let ( key0, key1) = CondEvalKey::gen();
+            online_k0.push(key0);
+            online_k1.push(key1);
+        }
+        write_file("../data/bitwise_kre_k0.bin", &online_k0);
+        write_file("../data/bitwise_kre_k1.bin", &online_k1);
+    }
 }
 
 
 #[cfg(test)]
 mod tests {
     use crate::offline_data::BitMaxOffline;
+    use crate::offline_data::BitKreOffline;
     use fss::prg::PrgSeed;
 
     #[test]
     fn io_check() {
-        let mut bitMax = BitMaxOffline::new(0u8);
         // let seed = PrgSeed::random();
         let seed = PrgSeed::one();
 
-        bitMax.genData(&seed,3usize,5usize);
-        bitMax.loadData();
+        // let mut bitMax = BitMaxOffline::new(0u8);
+        // bitMax.genData(&seed,3usize,5usize);
+        // bitMax.loadData();
+
+
+        let mut bitKre = BitKreOffline::new();
+        bitKre.genData(&seed,3usize,5usize);
+        bitKre.loadData(&0u8);
     }
 }

@@ -1,16 +1,16 @@
-use libmpc::mpc_party::{ MPCParty, bitwise_max};
+use libmpc::mpc_party::{ MPCParty, bitwise_max, bitwise_kre};
 use libmpc::mpc_platform::NetInterface;
 use libmpc::offline_data::*;
-use fss::prg::*;
+use fss::{prg::*, RingElm};
 use std::fs::File;
 use std::io::Write;
 use std::env;
 
 
-// pub const TEST_BITWISE_MAX: bool = true;
-// pub const TEST_BATCH_MAX: bool = false;
-// pub const TEST_BITWISE_KRE: bool = false;
-// pub const TEST_BATCH_KRE: bool = false;
+pub const TEST_BITWISE_MAX: bool = false;
+pub const TEST_BATCH_MAX: bool = false;
+pub const TEST_BITWISE_KRE: bool = true;
+pub const TEST_BATCH_KRE: bool = false;
 // pub const TEST_SIMULATE_NETWORK: bool = false;
 // pub const TEST_REAL_NETWORK: bool = false;
 
@@ -50,13 +50,17 @@ async fn main() {
     let index =  if is_server {String::from("0")} else {String::from("1")};
 
     let netlayer = NetInterface::new(is_server, "127.0.0.1:8088").await;
-    let mut offlinedata = BitMaxOffline::new(if is_server{0u8} else {1u8});
-    offlinedata.loadData();
 
-    let mut p = MPCParty::new(offlinedata, netlayer);
+    // let mut offlinedata = BitMaxOffline::new(if is_server{0u8} else {1u8});
+    let mut offlinedata: BitKreOffline = BitKreOffline::new();
+    offlinedata.loadData(if is_server{&0u8} else {&1u8});
+
+    let mut p: MPCParty<BitKreOffline> = MPCParty::new(offlinedata, netlayer);
     p.setup(INPUT_SIZE, INPUT_BITS);
 
-    let result = bitwise_max(&mut p, &x_share).await;
+    // let result = bitwise_max(&mut p, &x_share).await;
+    let kValue = RingElm::from(if is_server{0u32} else {2u32});
+    let result = bitwise_kre(&mut p, &x_share, &kValue).await;
 
     for i in 0..INPUT_SIZE{
         print!("x_share[{}]=", i);
@@ -97,14 +101,6 @@ mod test
     use libmpc::offline_data::*;
     use fss::prg::*;
     use crate::{INPUT_SIZE,INPUT_BITS};
-
-    #[test]
-    fn offlineDataGen(){
-        let mut bitMax = BitMaxOffline::new(0u8);
-        let seed = PrgSeed::random();
-        bitMax.genData(&seed,INPUT_SIZE,INPUT_BITS);
-    }
-
 
     #[tokio::test]
     async fn max_works(){
