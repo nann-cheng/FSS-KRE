@@ -295,10 +295,8 @@ pub async fn bitwise_kre(p: &mut MPCParty<BitKreOffline>, x_bits: &Vec<bool>, kV
     let t = p.netlayer.exchange_bool_vec(mask_bits.clone()).await; 
     /*Line5-6: v is the number of elements whose prefix is p_{i-1} */
     let mut vi_share= if is_server{ RingElm::from(m as u32) } else {RingElm::zero()};
-    let mut k_share= kValue.clone();
-   
+    let mut k_share = kValue.clone();
     let mut beavers = p.offlinedata.base.beavers.iter_mut();
-    
     //Online-step-3. Start bit-by-bit prefix query
     for i in 0..n{
         // println!("***************start the {} iteration***************", i);
@@ -313,10 +311,10 @@ pub async fn bitwise_kre(p: &mut MPCParty<BitKreOffline>, x_bits: &Vec<bool>, kV
         /*Round-1: CondEval & two multiplications*/
         let ri0_share = vi_share - mu_share;
         let ri1_share = mu_share.clone();
-        let mut msg0  = Vec::<u8>::new();//
-        let mut cond_Alpha0 = p.offlinedata.condeval_k_share[2*i].alpha + ri0_share;
-        let mut cond_Alpha1 = p.offlinedata.condeval_k_share[2*i+1].alpha + ri1_share;
-        // The decryption of two CondEval keys
+        let mut msg0  = Vec::<u8>::new();
+        let mut cond_Alpha0 = p.offlinedata.condeval_k_share[2*i].alpha + ri1_share - k_share;
+        let mut cond_Alpha1 = p.offlinedata.condeval_k_share[2*i+1].alpha + ri0_share - k_share;
+        //The decryption of two CondEval keys
         for j in 0..2{
             if j==0{
                 msg0.append(&mut cond_Alpha0.to_u8_vec());
@@ -333,26 +331,25 @@ pub async fn bitwise_kre(p: &mut MPCParty<BitKreOffline>, x_bits: &Vec<bool>, kV
         }
 
         let (beaver0, beaver1) = (beavers.next().unwrap(), beavers.next().unwrap());
-        let ne_qa_share = RingElm::one() - p.offlinedata.base.qa_share[i];
+        let ne_qa_share = {if is_server{RingElm::one()} else {RingElm::zero()}} - p.offlinedata.base.qa_share[i];
         msg0.append(&mut beaver0.beaver_mul0(p.offlinedata.base.qa_share[i], ri1_share));
         msg0.append(&mut beaver1.beaver_mul0(ne_qa_share, ri0_share));
 
-        //Msg: alpha0-4||condEvalDecrypt0||alpha1-4||condEvalDecrypt1||4+4(Mul)||4+4(Mul)
+        //Msg-format be: alpha0-4||condEvalDecrypt0||alpha1-4||condEvalDecrypt1||4+4(Mul)||4+4(Mul)
         let mut condEvalLen:usize = (msg0.len() - 4*2 - 8*2)/2;
-
-        //Perform Network communication
-        let otherMsg0 = p.netlayer.exchange_byte_vec(&msg0.clone()).await;
-
-
+        let otherMsg0 = p.netlayer.exchange_byte_vec(&msg0.clone()).await;//Perform Network communication
         //CondEval evaluation part:
         cond_Alpha0.add(&RingElm::from(otherMsg0[..4].to_vec()));
         cond_Alpha1.add(&RingElm::from(otherMsg0[condEvalLen+4..condEvalLen+8].to_vec()));
         let mut ci_0: BinElm = p.offlinedata.condeval_k_share[2*i].eval1(&cond_Alpha0, &otherMsg0[4..condEvalLen+4].to_vec());
         let ci_1 = p.offlinedata.condeval_k_share[2*i+1].eval1(&cond_Alpha1, &otherMsg0[8+condEvalLen..8+2*condEvalLen].to_vec());
+
+        // println!("ci_0: {:?}", ci_0);
+        // println!("ci_1: {:?} \n", ci_1);
+
         let mut ri_share = beaver0.beaver_mul1(is_server,&otherMsg0[2*(condEvalLen+4)..2*(condEvalLen+4)+8].to_vec());
         ri_share.add(& beaver1.beaver_mul1(is_server,&otherMsg0[2*(condEvalLen+4)+8..].to_vec()));
         /*End: Round-1: CondEval & two multiplications*/
-
 
         /*Round-2: Multiplications & Reveal*/
         let mut msg1  = Vec::<u8>::new();
@@ -372,20 +369,20 @@ pub async fn bitwise_kre(p: &mut MPCParty<BitKreOffline>, x_bits: &Vec<bool>, kV
 
         let t0_share = beaver2nd0.beaver_mul1(is_server,&otherMsg1[{start_index=1; start_index}..{start_index+=8; start_index}].to_vec());
         let t1_share = beaver2nd1.beaver_mul1(is_server,&otherMsg1[start_index..{start_index+=8; start_index}].to_vec());
-        let t2_share = beaver2nd1.beaver_mul1(is_server,&otherMsg1[start_index..].to_vec());
+        let t2_share = beaver2nd2.beaver_mul1(is_server,&otherMsg1[start_index..].to_vec());
         /*End: Round-2: Multiplications & Reveal*/
 
+        // println!("sigma_i: {} ", sigma_i);
         //Refresh secret sharing values. 
         if sigma_i{
-            k_share = k_share - RingElm::from(2)*t0_share + t2_share;
+            k_share = k_share -  t2_share;
             vi_share = ri_share - t1_share - t2_share;
         }else{
-            k_share = k_share + RingElm::from(2)*t0_share - ri_share - t2_share;
+            k_share = k_share - ri_share + t2_share;
             vi_share = li_share +  t1_share + t2_share;
         }
 
-        /*If sigma == 1, it means a wrong q[i] is choosed*/
-        if sigma_i{
+        if sigma_i{/*If sigma == 1, it means a wrong q[i] is choosed, then re-run evaluation to get the correct evaluation state*/
             for j in 0..m{
                 let eval_bit = !t[j*n+i];//choose the oppsite value x[j][i]
                 let (state_new, _) = p.offlinedata.base.k_share[j].eval_bit(&old_state[j], eval_bit);
@@ -393,7 +390,7 @@ pub async fn bitwise_kre(p: &mut MPCParty<BitKreOffline>, x_bits: &Vec<bool>, kV
             }
         }
         old_state = new_state.clone(); //update the state
-        println!("***************end the {} iteration***************", i);
+        // println!("***************end the {} iteration***************", i);
     }
     cmp_bits     
 }

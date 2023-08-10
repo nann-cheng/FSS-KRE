@@ -43,7 +43,7 @@ async fn main() {
         eprintln!("No arguments provided.");
     }
 
-    let seed = if is_server {PrgSeed::zero()} else {PrgSeed::one()};
+    let seed = if is_server {PrgSeed::zero()} else {PrgSeed::one()};//Guarantee same input bits to ease the debug process
     let mut stream = FixedKeyPrgStream::new();
     stream.set_key(&seed.key);
     let x_share = stream.next_bits(INPUT_BITS*INPUT_SIZE);
@@ -60,6 +60,7 @@ async fn main() {
 
     // let result = bitwise_max(&mut p, &x_share).await;
     let kValue = RingElm::from(if is_server{0u32} else {2u32});
+    // let kValue = RingElm::from(if is_server{0u32} else {2u32});
     let result = bitwise_kre(&mut p, &x_share, &kValue).await;
 
     for i in 0..INPUT_SIZE{
