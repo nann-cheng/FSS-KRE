@@ -261,7 +261,7 @@ impl BitKreOffline{
     }
 
     pub fn genData(&self, seed: &PrgSeed,input_size: usize, input_bits: usize){
-        self.base.genData(&seed,input_size,input_bits, input_bits*5);
+        self.base.genData(&seed,input_size,input_bits, input_bits*4);
         let mut stream = FixedKeyPrgStream::new();
         stream.set_key(&seed.key);
 

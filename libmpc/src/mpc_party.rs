@@ -359,15 +359,14 @@ pub async fn bitwise_kre(p: &mut MPCParty<BitKreOffline>, x_bits: &Vec<bool>, kV
         let mut sigma_i = cmp_bits[i] ^ p.offlinedata.base.qb_share[i];
         msg1.push(if sigma_i{1u8}else{0u8});
         let mut li_share = vi_share - ri_share;
-        let ( beaver2nd0, beaver2nd1, beaver2nd2) = (beavers.next().unwrap(), beavers.next().unwrap(),beavers.next().unwrap());
-        msg1.append(&mut beaver2nd0.beaver_mul0(p.offlinedata.base.qa_share[i], k_share));//compute t0
+        let ( beaver2nd1, beaver2nd2) = (beavers.next().unwrap(),beavers.next().unwrap());
         msg1.append(&mut beaver2nd1.beaver_mul0(p.offlinedata.base.qa_share[i], li_share));//compute t1
         msg1.append(&mut beaver2nd2.beaver_mul0(p.offlinedata.base.qa_share[i], ri_share));//compute t2
 
         let otherMsg1 = p.netlayer.exchange_byte_vec(&msg1.clone()).await;
         sigma_i ^= otherMsg1[0] == 1;
 
-        let t0_share = beaver2nd0.beaver_mul1(is_server,&otherMsg1[{start_index=1; start_index}..{start_index+=8; start_index}].to_vec());
+        start_index=1;
         let t1_share = beaver2nd1.beaver_mul1(is_server,&otherMsg1[start_index..{start_index+=8; start_index}].to_vec());
         let t2_share = beaver2nd2.beaver_mul1(is_server,&otherMsg1[start_index..].to_vec());
         /*End: Round-2: Multiplications & Reveal*/
@@ -376,10 +375,12 @@ pub async fn bitwise_kre(p: &mut MPCParty<BitKreOffline>, x_bits: &Vec<bool>, kV
         //Refresh secret sharing values. 
         if sigma_i{
             k_share = k_share -  t2_share;
-            vi_share = ri_share - t1_share - t2_share;
+            vi_share = ri_share + t1_share - t2_share;
+            // vi_share = t2_share - t1_share ;
         }else{
             k_share = k_share - ri_share + t2_share;
-            vi_share = li_share +  t1_share + t2_share;
+            // vi_share = li_share +  t1_share + t2_share;
+            vi_share = li_share -  t1_share + t2_share;
         }
 
         if sigma_i{/*If sigma == 1, it means a wrong q[i] is choosed, then re-run evaluation to get the correct evaluation state*/
