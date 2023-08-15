@@ -240,7 +240,6 @@ impl BitMaxOffline{
     }
 }
 
-
 pub struct BitKreOffline{
     pub base: BasicOffline,
     pub condeval_k_share: Vec<CondEvalKey>,//CondEval keys for lessThan check
@@ -278,6 +277,7 @@ impl BitKreOffline{
     }
 }
 
+pub mod offline_batch_max;
 
 #[cfg(test)]
 mod tests {

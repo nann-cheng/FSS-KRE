@@ -28,10 +28,10 @@ use crate::offline_data::*;
 // trait OfflineTrait {BitMaxOffline,BitKreOffline};
 pub struct MPCParty<T>{
     // offlinedata: BitMaxOffline,
-    offlinedata: T,
-    m: usize, //The number of share numbers
-    n: usize, //The length of a shared element
-    netlayer: NetInterface
+    pub offlinedata: T,
+    pub m: usize, //The number of share numbers
+    pub n: usize, //The length of a shared element
+    pub netlayer: NetInterface
 }
 
 impl<T>  MPCParty<T>{

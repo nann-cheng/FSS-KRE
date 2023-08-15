@@ -5,6 +5,7 @@ pub mod dcf;
 pub mod ic;
 pub mod condEval;
 pub mod beavertuple;
+pub mod mbeaver;
 
 #[macro_use]
 extern crate lazy_static;
