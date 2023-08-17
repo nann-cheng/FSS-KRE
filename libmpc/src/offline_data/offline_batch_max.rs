@@ -7,7 +7,7 @@ use serde::Serialize;
 use fss::mbeaver::MBeaver;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct QMatrix{
+pub struct QMatrix{ //This structure is defined for the ConvMatrix 
     pub v: Vec<bool>,
     pub n: usize
 } // The offline data used in every batch.
@@ -115,7 +115,7 @@ impl BatchMaxOffline{
             Err(e) => println!("Error reading file: {}", e),  //Or handle the error as needed
         }
 
-        match read_file(&format!("../data/qmatix{}.bin", idx)) {
+        match read_file(&format!("../data/qmatrix{}.bin", idx)) {
             Ok(value) => self.qmatrix_share = value,
             Err(e) => println!("Error reading file: {}", e),  //Or handle the error as needed
         }
@@ -132,7 +132,7 @@ impl BatchMaxOffline{
     }
 
     pub fn genData(&self, seed: &PrgSeed,input_size: usize, input_bits: usize, batch_size: usize, cbeavers_num: usize){
-        self.base.genData(&seed,input_size,input_bits, input_bits*2);
+        let q_boolean = self.base.genData(&seed,input_size,input_bits, input_bits*2);
         let mut stream = FixedKeyPrgStream::new();
         stream.set_key(&seed.key);
 
@@ -175,8 +175,10 @@ impl BatchMaxOffline{
          
          let mut qmatrix_share0 = Vec::<QMatrix>::new();
          let mut qmatrix_share1 = Vec::<QMatrix>::new();
+         
          for i in 0..block_num{
-            let q_matrix_i = f_conv_matrix(&self.base.qb_share[i*batch_size..(i+1)*batch_size].to_vec(), batch_size);
+            //let q_matrix_i = f_conv_matrix(&self.base.qb_share[i*batch_size..(i+1)*batch_size].to_vec(), batch_size);
+            let q_matrix_i = f_conv_matrix(&q_boolean[i*batch_size..(i+1)*batch_size].to_vec(), batch_size); //changed 08-17
             let (qm0, qm1) = q_matrix_i.split();
             qmatrix_share0.push(qm0);
             qmatrix_share1.push(qm1);

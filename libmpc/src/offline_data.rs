@@ -77,7 +77,7 @@ impl BasicOffline{
         }
     }
 
-    pub fn genData(&self,seed: &PrgSeed,input_size: usize, input_bits: usize, beaver_amount: usize){
+    pub fn genData(&self,seed: &PrgSeed,input_size: usize, input_bits: usize, beaver_amount: usize)->Vec<bool>{ //there, I think genData() should be a class method
         let mut stream = FixedKeyPrgStream::new();
         stream.set_key(&seed.key);
         //Offline-Step-1. Set IDPF Parameters
@@ -122,6 +122,7 @@ impl BasicOffline{
         write_file("../data/qa1.bin", &q_numeric_1);
 
         self.genBeaver(&seed, beaver_amount);
+        q_boolean
     }
 
     pub fn genBeaver(&self, seed: &PrgSeed, size:usize){

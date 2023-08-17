@@ -1,18 +1,10 @@
-use std::f32::consts::E;
-
 use fss::*;
-use fss::beavertuple::BeaverTuple;
 use fss::idpf::*;
-use fss::dpf::*;
 use fss::RingElm;
 use fss::BinElm;
 use fss::mbeaver::MBeaver;
-use fss::mbeaver::Muls;
 use fss::mbeaver::product;
-//use rand::seq::index;
-use crate::mpc_platform::*;
-use crate::offline_data;
-use crate::offline_data::*;
+
 use crate::offline_data::offline_batch_max::BatchMaxOffline;
 use super::super::mpc_party::*;
 
@@ -83,11 +75,11 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
             tmp_state_i.push(idpf_state[i].clone()); // initialize the j-th idpf's state 
         }   //prepare for m state vectors, each of which contains  {\tao} state
 
+        let index_start = block_order * batch_size;
+        let index_end: usize = (block_order+1) * batch_size; //change them out from the loop
         for i in 0..every_batch_num{ // for every \{tao} - j
             let mut v_item = RingElm::from(0);
             for j in 0..m{
-                let index_start = block_order * batch_size;
-                let index_end: usize = (block_order+1) * batch_size;
                 let x_idpf = bits_Xor(&const_bdc_bits[i*batch_size..(i+1)*batch_size].to_vec(), &t[(j*n+index_start)..(j*n+index_end)].to_vec());//line8
                 //let (state_new, beta) = p.offlinedata.base.k_share[j].eval_bit(&old_state[j], &x_idpf[0..batch_size]);
                 let old_state = idpf_state[j].clone(); // The initial state of the m-th idpf is idpf_state[i]
@@ -152,11 +144,11 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
             for i in 0..every_batch_num{ // for every item in cmp and every line in M 
                 for j in 0..every_batch_num{ //prepare for cmp[j] * M[i][j]
                     let beaver_new = it_bbeaver.next().unwrap();
-                    let delta_0 = cmp[j] ^ beaver_new[0];
-                    let delta_1 = M.locate(i, j) ^ beaver_new[1];
-                    exchange_msg_1.push(delta_0); 
-                    exchange_msg_1.push(delta_1);
-                    consumed_beavers.push(beaver_new.clone());
+                    let delta_0 = cmp[j] ^ beaver_new[0]; //d_share =  v_{alpha} - a
+                    let delta_1 = M.locate(i, j) ^ beaver_new[1]; //e_share = v_{beta} - b
+                    exchange_msg_1.push(delta_0);  //push d_share
+                    exchange_msg_1.push(delta_1);  //push e_share
+                    consumed_beavers.push(beaver_new.clone()); //store the consumed beaver
                 }
             }
             
@@ -169,8 +161,8 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
             for i in 0..every_batch_num{ // for every item in cmp and every line in M 
                 for j in 0..every_batch_num{ //prepare for cmp[j] * M[i][j]
                     let beaver_new = consumed_beavers[index_delta].clone();
-                    let delta_0 = delta[index_delta*2];
-                    let delta_1 = delta[index_delta*2+1];
+                    let delta_0 = delta[index_delta*2];     //obtain d
+                    let delta_1 = delta[index_delta*2+1];   //obtain e
                     let mut delta = Vec::<bool>::new();
                     delta.push(delta_0);
                     delta.push(delta_1);
@@ -186,7 +178,7 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
             //let mbs = &p.offlinedata.mbeavers[block_order].mbs;
             let mut exchange_msg_2 = Vec::<bool>::new();
 
-            for i in 1..every_batch_num{
+            for i in 1..every_batch_num{ // {\tao} - 2 mulitiplications
                 let mut item = cmp[i] ^ mbs[i-1][0]; //the index of mbs is i-1
                 exchange_msg_2.push(item);
                 for j in 0..i{ //1-cmp[j]
@@ -235,7 +227,7 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
         /********************************************************  END:   F_BatchMax Line15  *****************************************/
         /*****************************************************************************************************************************/
         
-        let mut path_eval = 0;
+        let mut path_eval = 0; // define which path is used
         for i in 0..batch_size{
             path_eval = path_eval << 1;
             if f_batch_max[i]{
@@ -248,12 +240,11 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
         } // Line18-20: update the idpf-s
 
         for i in 0..batch_size{
-            cmp_bits[i+block_order*batch_size] = f_batch_max[i];
+            cmp_bits[i+block_order*batch_size] = f_batch_max[i] ^ p.offlinedata.base.qb_share[i+block_order*batch_size]; // A big change here, last version forgot xor the q_share 
         }
     }
      /********************************************************  END:   Line6-25*****************   *************************************************/
-    /***********************************************************************************************************************************************/   
-    //let mut b2d = Vec<>
+    /***********************************************************************************************************************************************/  
     cmp_bits     
 }
 
@@ -270,7 +261,7 @@ mod tests {
     //use rand::Rng;
     use tokio::sync::mpsc;
     use fss::mbeaver::*;
-    use fss::{u32_to_bits_BE};
+    use fss::u32_to_bits_BE;
 
     use crate::offline_data::offline_batch_max::{f_conv_matrix, QMatrix, MBeaverBlock};
     #[tokio::test]
@@ -279,7 +270,7 @@ mod tests {
 
     #[test]
     fn const_bits_works(){
-        let batch_size: usize = 2;
+        let batch_size: usize = 3;
         let every_batch_num = 1 << batch_size;
         let mut const_bdc_bits = Vec::<bool>::new();
         for i in 0..every_batch_num{

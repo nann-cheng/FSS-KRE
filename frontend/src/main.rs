@@ -100,6 +100,7 @@ mod test
     use fss::{ RingElm, Group};
     use std::io::Read;
     use libmpc::offline_data::*;
+    use libmpc::offline_data::offline_batch_max::*;
     use fss::prg::*;
     use crate::{INPUT_SIZE,INPUT_BITS};
 
@@ -172,5 +173,16 @@ mod test
         let r = bv2uint(c);
         println!("max={:?}", r);
         assert_eq!(*x_max, r);
+    }
+
+    #[test]
+    fn batch_max_gen_offlinedata(){
+        let input_size = 3;
+        let input_bits = 4;
+        let batch_size = 2;
+        let cbeavers_num = 1000;
+        let offline = BatchMaxOffline::new();
+        offline.genData(&PrgSeed::zero(), input_size, input_bits, batch_size, cbeavers_num);
+        //BatchMaxOffline::genData(&self, seed, input_size, input_bits, batch_size, cbeavers_num)
     }
 }
