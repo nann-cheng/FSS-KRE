@@ -1,5 +1,5 @@
 use super::*;
-use fss::{bits_to_u32, u32_to_bits_BE};
+use fss::{bits_to_u32, u32_to_bits_BE, u32_to_bits, bits_to_u8_BE};
 use fss::prg::FixedKeyPrgStream;
 //use std::path::PathBuf;
 use serde::Deserialize;
@@ -220,19 +220,10 @@ impl BatchMaxOffline{
 
 pub fn f_conv_matrix(q:&Vec<bool>, batch_size: usize) -> QMatrix{
     let every_batch_num:usize = 1 << batch_size; // the maximum of a batch
-    
-    let mut const_bits = Vec::<bool>::new(); 
-    for i in 0..every_batch_num{
-        let cur_bits = u32_to_bits_BE(batch_size, (every_batch_num-1-i).try_into().unwrap()); //convert int to {omega}-bits. q[0..{omega}]
-        const_bits.extend(cur_bits);
-    } // this piece of code is to F_{BDC}(i), i from 2^{omega}-1 to 0
-    //println!("{:?}", const_bits);
-
-    //let mut correlated_q = vec![RingElm::zero();every_batch_num];
     let mut correlated_q = vec![false;every_batch_num];
-    // Line 1 in F_{ConvMatrix}, compute \Pi{q[i]}
-    for i in 0..every_batch_num{ // from 0 to 2^{\omega}-1
-        let cur_bits = &const_bits[i*batch_size..(i+1)*batch_size]; //convert int to {omega}-bits. q[0..{omega}]
+    
+    for i in 0..every_batch_num{
+        let cur_bits = u32_to_bits(batch_size, (every_batch_num-1-i).try_into().unwrap());
         let mut mul = true;
         for j in 0..batch_size{
             if cur_bits[j]{
@@ -243,23 +234,36 @@ pub fn f_conv_matrix(q:&Vec<bool>, batch_size: usize) -> QMatrix{
             }
         }
         if mul{
-            //correlated_q[i]=RingElm::one();
-            correlated_q[i] = true;
+            correlated_q[i]=true;
         }
     }
-    //println!("{:?}", correlated_q);
-    //correlated_q
+    
+    println!("{:?}", correlated_q);
 
-    //let mut CONVERT_MATRIX = vec![RingElm::from(0);every_batch_num*every_batch_num];
+    //Offline-Step-3.2 unorder2order Converting matrix coefficients index generation (Q value indepedent)
     let mut CONVERT_MATRIX = vec![false;every_batch_num*every_batch_num];
     for i in 0..every_batch_num{
-        CONVERT_MATRIX[i] = correlated_q[i];
-    }
-    for i in 1..every_batch_num{
+        let ctl_bits = u32_to_bits(batch_size, (every_batch_num-i-1).try_into().unwrap());
+        let upper_limit:u8 = (every_batch_num-1).try_into().unwrap();
+        // println!("ctrl_bits {:?}", ctl_bits);
         for j in 0..every_batch_num{
-            CONVERT_MATRIX[i*every_batch_num + j] = CONVERT_MATRIX[(i-1)*every_batch_num + ((j+every_batch_num-1)%every_batch_num)].clone();
-        }        
-    }
+            let jj_bits = u32_to_bits(batch_size, (every_batch_num-j-1).try_into().unwrap());
+            let mut tmp = vec![false;batch_size];
+
+            for k in 0..batch_size{
+                if ctl_bits[k]{
+                    tmp[k] = jj_bits[k];
+                }else{
+                    tmp[k] = !jj_bits[k];
+                }
+            }
+            // println!("{:?}", tmp);
+            //CONVERT_MATRIX[every_batch_num*i+j] = //upper_limit-bits_to_u8_BE(&tmp);
+            let index = upper_limit - bits_to_u8_BE(&tmp);
+            CONVERT_MATRIX[every_batch_num*i+j] = correlated_q[index as usize];
+            // CONVERT_MATRIX[every_batch_num*i+j] = - CONVERT_MATRIX[every_batch_num*i+j]；
+        }
+    } 
     QMatrix{ v: CONVERT_MATRIX, n: every_batch_num}
 } 
 
@@ -284,10 +288,10 @@ mod tests {
     fn fconvmatrix_works(){
         let mut q = Vec::<bool>::new();
         q.push(false);
-        q.push(true);
-        q.push(true);
+        q.push(false);
+        //q.push(true);
 
-        let m = f_conv_matrix(&q, 3);
+        let m =  f_conv_matrix(&q, 2);
         //println!("{:?}", m);
         m.print();
 
