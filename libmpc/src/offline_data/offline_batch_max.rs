@@ -90,6 +90,7 @@ impl  MBeaverBlock{
 
 pub struct BatchMaxOffline{
     pub base: BasicOffline,
+    //pub batch_size: usize,
     pub zc_k_share: Vec<DPFKey<BinElm>>,//dpf keys for zero_check
     pub zc_a_share: Vec<RingElm>,
     pub qmatrix_share: Vec<QMatrix>, // The convert matrix that is in the form of 1-dim, when using it, the two indexs should be transformed into one-dim index
@@ -143,13 +144,17 @@ impl BatchMaxOffline{
         let mut zero_dpf_r0: Vec<RingElm> = Vec::new();
         let mut zero_dpf_r1: Vec<RingElm> = Vec::new();
         
-        for _ in 0..input_bits{
+        let every_batch_num:usize = 1 << batch_size; // the maximum of a batch
+         let block_num = input_bits / batch_size; // the block number 
+         let remain_bits = input_bits % batch_size;
+         
+        for _ in 0..every_batch_num * block_num{ // It needs call {\tao} f_znc in every block
             let zero_r_bits = stream.next_bits(NUMERIC_LEN*2);
 
             let mut numeric_zero_r_1 = RingElm::from( bits_to_u32(&zero_r_bits[..NUMERIC_LEN]) );
             let numeric_zero_r = RingElm::from( bits_to_u32(&zero_r_bits[..NUMERIC_LEN]) );
 
-            println!("numeric_zero_r={:?}", numeric_zero_r);
+            //println!("numeric_zero_r={:?}", numeric_zero_r);
             // println!("Vec<bool>: {:?}", zero_r_bits[..NUMERIC_LEN].to_vec());
             let numeric_zero_r_0 = RingElm::from( bits_to_u32(&zero_r_bits[NUMERIC_LEN..]) );
             numeric_zero_r_1.sub(&numeric_zero_r_0);
@@ -169,9 +174,6 @@ impl BatchMaxOffline{
         write_file("../data/zc_k1.bin", &zero_dpf_1);
 
          //Offline-Step-3.1 Q terms value generation
-         let every_batch_num:usize = 1 << batch_size; // the maximum of a batch
-         let block_num = input_bits / batch_size; // the block number 
-         let remain_bits = input_bits % batch_size;
          
          let mut qmatrix_share0 = Vec::<QMatrix>::new();
          let mut qmatrix_share1 = Vec::<QMatrix>::new();

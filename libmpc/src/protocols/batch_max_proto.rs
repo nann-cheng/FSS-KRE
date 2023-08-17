@@ -28,7 +28,7 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
 
     let every_batch_num = 1 << batch_size;
     let block_num = n / batch_size;
-    
+    //println!("m={}, n={}", m, n);
     /***********************************************************************************************************************************************/
     /******************************************************  START: Line8 Comute \tao F_{BDC} i in 0..{\tao} ***************************************/
     let mut const_bdc_bits = Vec::<bool>::new();
@@ -47,6 +47,8 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
     let mut idpf_state = Vec::<EvalState>::new();
     //let mut new_state = Vec::<EvalState>::new();
 
+    //println!("k_share_len:{}", p.offlinedata.base.k_share.len());
+    //println!("a_share_len:{}", p.offlinedata.base.a_share.len());
     /*Line 2-5: This step compute n mask bits that will be used as the input of IDPF*/
     for i in 0..m{
         let init_state = p.offlinedata.base.k_share[i].eval_init();
@@ -62,7 +64,7 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
     let t = p.netlayer.exchange_bool_vec(mask_bits.clone()).await; 
     /******************************************************  END: Line2-5: Reveal t = x^q^{\alpha} **************************************************/
     /***********************************************************************************************************************************************/
-    
+    println!("q={:?}", p.offlinedata.base.qb_share);
     /***********************************************************************************************************************************************/
     /********************************************************  START: Line6-25: Compute vector V   *************************************************/
     for block_order in 0..block_num{ // for every block
@@ -71,8 +73,9 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
         let mut V = Vec::<RingElm>::new();
         let mut tmp_state = Vec::<Vec::<EvalState>>::new();
         for i in 0..m{
-            let mut tmp_state_i = Vec::<EvalState>::new();
-            tmp_state_i.push(idpf_state[i].clone()); // initialize the j-th idpf's state 
+            let tmp_state_i = Vec::<EvalState>::new();
+            //tmp_state_i.push(idpf_state[i].clone()); // initialize the j-th idpf's state 
+            tmp_state.push(tmp_state_i);
         }   //prepare for m state vectors, each of which contains  {\tao} state
 
         let index_start = block_order * batch_size;
@@ -98,12 +101,13 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
         let f_batch_max = {
             /***********************************   START: Line3-5 Compute idpf-s    **********************************/
             let q_share = &p.offlinedata.base.qb_share[block_order*batch_size..(block_order+1)*batch_size];
-            let zc_a_share = &p.offlinedata.zc_a_share[block_order*batch_size..(block_order+1)*batch_size];
-            let zc_k_share = &p.offlinedata.zc_k_share[block_order*batch_size..(block_order+1)*batch_size];
+            let zc_a_share = &p.offlinedata.zc_a_share[block_order*every_batch_num..(block_order+1)*every_batch_num];
+            let zc_k_share = &p.offlinedata.zc_k_share[block_order*every_batch_num..(block_order+1)*every_batch_num]; 
+            //update0817: it needs to call f_znc {\tao} times in every block  
             let M = &p.offlinedata.qmatrix_share[block_order];
             let mbs = &p.offlinedata.mbeavers[block_order].mbs;
             let mut it_bbeaver = p.offlinedata.binary_beavers.iter();
-
+            M.print();
             let mut x_f_nzc_share = Vec::<RingElm>::new();
             
             for i in 0..every_batch_num{
@@ -123,7 +127,6 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
                     Some(numeric) => vec_eval = u32_to_bits(32usize,numeric),
                     None      => println!( "u32 Conversion failed!!" ),
                 }
-
         
                 let y_fnzc: BinElm = zc_k_share[i].eval(&vec_eval);
                 // println!("y_fnzc={:?}", y_fnzc);
@@ -134,7 +137,7 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
                 cmp.push(cmp_i);
             } //Line3-5, compute idpf-s
             /***********************************   END:   Line3-5 Compute idpf-s    **********************************/
-        
+            println!("pre-ordered cmp[{}]={:?}", block_order, cmp);
             /********************************   START:  Line2 order cmp  *********************************************/
 
             let mut exchange_msg_1 = Vec::<bool>::new();
@@ -145,7 +148,7 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
                 for j in 0..every_batch_num{ //prepare for cmp[j] * M[i][j]
                     let beaver_new = it_bbeaver.next().unwrap();
                     let delta_0 = cmp[j] ^ beaver_new[0]; //d_share =  v_{alpha} - a
-                    let delta_1 = M.locate(i, j) ^ beaver_new[1]; //e_share = v_{beta} - b
+                    let delta_1 = M.locate(j, i) ^ beaver_new[1]; //e_share = v_{beta} - b
                     exchange_msg_1.push(delta_0);  //push d_share
                     exchange_msg_1.push(delta_1);  //push e_share
                     consumed_beavers.push(beaver_new.clone()); //store the consumed beaver
@@ -171,7 +174,7 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
                     cmp[i] = cmp[i] ^ bool_product;
                 }
             } //finished test already
-            
+            println!("ordered cmp[{}]={:?}", block_order, cmp);
             /******************************** END:    Line2 order cmp  *********************************************/
 
             /******************************** START:  Line11 Compute bt  *******************************************/
@@ -221,12 +224,13 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
                 }
             }
             /******************************** END:    Line14 Compute y_i  ******************************************/
+            println!("Pre-y[{}]={:?}", block_order, y);
             let result = p.netlayer.exchange_bool_vec(y).await;
             result
         };       
         /********************************************************  END:   F_BatchMax Line15  *****************************************/
         /*****************************************************************************************************************************/
-        
+        println!("Reveal-y[{}]={:?}", block_order, f_batch_max);
         let mut path_eval = 0; // define which path is used
         for i in 0..batch_size{
             path_eval = path_eval << 1;

@@ -221,7 +221,7 @@ impl BitMaxOffline{
             let mut numeric_zero_r_1 = RingElm::from( bits_to_u32(&zero_r_bits[..NUMERIC_LEN]) );
             let numeric_zero_r = RingElm::from( bits_to_u32(&zero_r_bits[..NUMERIC_LEN]) );
 
-            println!("numeric_zero_r={:?}", numeric_zero_r);
+            //println!("numeric_zero_r={:?}", numeric_zero_r);
             // println!("Vec<bool>: {:?}", zero_r_bits[..NUMERIC_LEN].to_vec());
             let numeric_zero_r_0 = RingElm::from( bits_to_u32(&zero_r_bits[NUMERIC_LEN..]) );
             numeric_zero_r_1.sub(&numeric_zero_r_0);
