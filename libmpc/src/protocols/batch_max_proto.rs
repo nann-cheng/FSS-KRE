@@ -24,6 +24,7 @@ pub fn batch_eval_of_idpf(idpf: &IDPFKey<RingElm>, old_state: &EvalState, x_batc
 pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, batch_size: usize) ->Vec<bool>{
     let m: usize = p.m;
     let n = p.n;
+    println!("m={}, n={}", m, n);
     let is_server = p.netlayer.is_server;
 
     let every_batch_num = 1 << batch_size;
@@ -238,9 +239,9 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
                 path_eval += 1;
             }
         }  //line 17: rebuild the numerical max num
-
+        println!("path_eval={}", path_eval);
         for i in 0..m{
-            idpf_state[i] = tmp_state[i][path_eval].clone(); 
+            idpf_state[i] = tmp_state[i][every_batch_num-path_eval-1].clone();  //update 0819: a big bug fixed here
         } // Line18-20: update the idpf-s
 
         if is_server{ //Here, I fixed a big bug, update:0819

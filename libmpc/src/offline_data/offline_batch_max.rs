@@ -269,9 +269,10 @@ mod tests {
         let mut q = Vec::<bool>::new();
         q.push(false);
         q.push(false);
+        q.push(true);
         //q.push(true);
 
-        let m =  f_conv_matrix(&q, 2);
+        let m =  f_conv_matrix(&q, 3);
         //println!("{:?}", m);
         m.print();
 

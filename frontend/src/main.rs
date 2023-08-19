@@ -17,8 +17,8 @@ pub const TEST_BATCH_KRE: bool = false;
 // pub const TEST_REAL_NETWORK: bool = false;
 
 const INPUT_SIZE: usize = 3usize;
-const INPUT_BITS: usize = 4usize;
-
+const INPUT_BITS: usize = 6usize;
+const BATCH_SIZE: usize = 2usize;
 #[tokio::main]
 async fn main() {
     let mut is_server=false;
@@ -66,7 +66,7 @@ async fn main() {
     //let kValue = RingElm::from(if is_server{0u32} else {2u32});
     // let kValue = RingElm::from(if is_server{0u32} else {2u32});
     //let result = bitwise_kre(&mut p, &x_share, &kValue).await;
-    let result = batch_max(&mut p, &x_share, 2).await;
+    let result = batch_max(&mut p, &x_share, BATCH_SIZE).await;
     for i in 0..INPUT_SIZE{
         print!("x_share[{}]=", i);
         for j in 0..INPUT_BITS{
@@ -106,7 +106,7 @@ mod test
     use libmpc::offline_data::*;
     use libmpc::offline_data::offline_batch_max::*;
     use fss::prg::*;
-    use crate::{INPUT_SIZE,INPUT_BITS};
+    use crate::{INPUT_SIZE,INPUT_BITS, BATCH_SIZE};
     
     #[tokio::test]
     async fn max_works(){
@@ -181,9 +181,9 @@ mod test
 
     #[test]
     fn batch_max_gen_offlinedata(){
-        let input_size = 3;
-        let input_bits = 4;
-        let batch_size = 2;
+        let input_size = INPUT_SIZE;
+        let input_bits = INPUT_BITS;
+        let batch_size = BATCH_SIZE;
         let cbeavers_num = 1000;
         let offline = BatchMaxOffline::new();
         offline.genData(&PrgSeed::zero(), input_size, input_bits, batch_size, cbeavers_num);
