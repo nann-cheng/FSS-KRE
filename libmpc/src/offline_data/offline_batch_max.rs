@@ -217,54 +217,34 @@ impl BatchMaxOffline{
     }
 
 }
-
+//assume batch_size <= 8 
 pub fn f_conv_matrix(q:&Vec<bool>, batch_size: usize) -> QMatrix{
-    let every_batch_num:usize = 1 << batch_size; // the maximum of a batch
-    let mut correlated_q = vec![false;every_batch_num];
-    
+    let every_batch_num: usize = 1 << batch_size;
+    /*let q_num = bits_to_u8_BE(q); //indicate the location to get 1..1
+    println!("q_num={}", q_num);
+    let all_one_pos = q_num as usize;
+    let  mut v = vec![false; (every_batch_num * every_batch_num) as usize];
     for i in 0..every_batch_num{
-        let cur_bits = u32_to_bits(batch_size, (every_batch_num-1-i).try_into().unwrap());
-        let mut mul = true;
-        for j in 0..batch_size{
-            if cur_bits[j]{
-                mul &= q[j];
-            }
-            else{
-                mul &= !q[j];
-            }
-        }
-        if mul{
-            correlated_q[i]=true;
-        }
+        v[i*every_batch_num + ((all_one_pos + i) % every_batch_num)] = true;
+    }*/
+    let mut const_bdc_bits = Vec::<bool>::new();
+    for i in 0..every_batch_num{
+        let cur_bits = u32_to_bits_BE(batch_size, (every_batch_num-1-i).try_into().unwrap()); 
+        //convert int to {omega}-bits. q[0..{omega}]
+        const_bdc_bits.extend(cur_bits);
     }
-    
-    println!("{:?}", correlated_q);
 
-    //Offline-Step-3.2 unorder2order Converting matrix coefficients index generation (Q value indepedent)
-    let mut CONVERT_MATRIX = vec![false;every_batch_num*every_batch_num];
+    let mut v = vec![false; every_batch_num * every_batch_num];
     for i in 0..every_batch_num{
-        let ctl_bits = u32_to_bits(batch_size, (every_batch_num-i-1).try_into().unwrap());
-        let upper_limit:u8 = (every_batch_num-1).try_into().unwrap();
-        // println!("ctrl_bits {:?}", ctl_bits);
-        for j in 0..every_batch_num{
-            let jj_bits = u32_to_bits(batch_size, (every_batch_num-j-1).try_into().unwrap());
-            let mut tmp = vec![false;batch_size];
-
-            for k in 0..batch_size{
-                if ctl_bits[k]{
-                    tmp[k] = jj_bits[k];
-                }else{
-                    tmp[k] = !jj_bits[k];
-                }
-            }
-            // println!("{:?}", tmp);
-            //CONVERT_MATRIX[every_batch_num*i+j] = //upper_limit-bits_to_u8_BE(&tmp);
-            let index = upper_limit - bits_to_u8_BE(&tmp);
-            CONVERT_MATRIX[every_batch_num*i+j] = correlated_q[index as usize];
-            // CONVERT_MATRIX[every_batch_num*i+j] = - CONVERT_MATRIX[every_batch_num*i+j]；
+        let mut pos_bits = vec![false; batch_size];
+        for j in 0..batch_size{
+            pos_bits[j] = q[j] ^ const_bdc_bits[i*batch_size + j];
         }
-    } 
-    QMatrix{ v: CONVERT_MATRIX, n: every_batch_num}
+        let pos: usize = bits_to_u8_BE(&pos_bits).into();
+        println!("i= {},pos = {}", i, pos);
+        v[i*every_batch_num + (every_batch_num-pos-1)] = true; 
+    }
+    QMatrix{ v: v, n: every_batch_num}
 } 
 
 

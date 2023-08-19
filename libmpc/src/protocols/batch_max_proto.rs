@@ -148,7 +148,7 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
                 for j in 0..every_batch_num{ //prepare for cmp[j] * M[i][j]
                     let beaver_new = it_bbeaver.next().unwrap();
                     let delta_0 = cmp[j] ^ beaver_new[0]; //d_share =  v_{alpha} - a
-                    let delta_1 = M.locate(j, i) ^ beaver_new[1]; //e_share = v_{beta} - b
+                    let delta_1 = M.locate(i, j) ^ beaver_new[1]; //e_share = v_{beta} - b
                     exchange_msg_1.push(delta_0);  //push d_share
                     exchange_msg_1.push(delta_1);  //push e_share
                     consumed_beavers.push(beaver_new.clone()); //store the consumed beaver
@@ -243,8 +243,15 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
             idpf_state[i] = tmp_state[i][path_eval].clone(); 
         } // Line18-20: update the idpf-s
 
-        for i in 0..batch_size{
-            cmp_bits[i+block_order*batch_size] = f_batch_max[i] ^ p.offlinedata.base.qb_share[i+block_order*batch_size]; // A big change here, last version forgot xor the q_share 
+        if is_server{ //Here, I fixed a big bug, update:0819
+            for i in 0..batch_size{
+                cmp_bits[i+block_order*batch_size] = f_batch_max[i] ^ p.offlinedata.base.qb_share[i+block_order*batch_size]; // A big change here, last version forgot xor the q_share 
+            }
+        }
+        else{
+            for i in 0..batch_size{
+                cmp_bits[i+block_order*batch_size] = p.offlinedata.base.qb_share[i+block_order*batch_size]; // A big change here, last version forgot xor the q_share 
+            }
         }
     }
      /********************************************************  END:   Line6-25*****************   *************************************************/
