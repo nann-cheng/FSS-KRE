@@ -18,7 +18,7 @@ pub const TEST_BATCH_KRE: bool = false;
 
 const INPUT_SIZE: usize = 3usize;
 const INPUT_BITS: usize = 6usize;
-const BATCH_SIZE: usize = 2usize;
+const BATCH_SIZE: usize = 3usize;
 #[tokio::main]
 async fn main() {
     let mut is_server=false;
@@ -184,9 +184,10 @@ mod test
         let input_size = INPUT_SIZE;
         let input_bits = INPUT_BITS;
         let batch_size = BATCH_SIZE;
-        let cbeavers_num = 1000;
+        let every_batch_num = 1 << batch_size;
+        let cbeavers_num = every_batch_num * every_batch_num;
         let offline = BatchMaxOffline::new();
-        offline.genData(&PrgSeed::zero(), input_size, input_bits, batch_size, cbeavers_num);
+        offline.genData(&PrgSeed::zero(), input_size, input_bits, batch_size, every_batch_num * every_batch_num);
         //BatchMaxOffline::genData(&self, seed, input_size, input_bits, batch_size, cbeavers_num)
     }
 
