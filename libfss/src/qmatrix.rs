@@ -3,6 +3,38 @@ use crate::prg::*;
 use serde::Deserialize;
 use serde::Serialize;
 
+pub fn f_conv_matrix(q: &Vec<bool>, batch_size: usize) -> QMatrix {
+    let every_batch_num: usize = 1 << batch_size;
+    /*let q_num = bits_to_u8_BE(q); //indicate the location to get 1..1
+    println!("q_num={}", q_num);
+    let all_one_pos = q_num as usize;
+    let  mut v = vec![false; (every_batch_num * every_batch_num) as usize];
+    for i in 0..every_batch_num{
+        v[i*every_batch_num + ((all_one_pos + i) % every_batch_num)] = true;
+    }*/
+    let mut const_bdc_bits = Vec::<bool>::new();
+    for i in 0..every_batch_num {
+        let cur_bits = u32_to_bits_BE(batch_size, (every_batch_num - 1 - i).try_into().unwrap());
+        //convert int to {omega}-bits. q[0..{omega}]
+        const_bdc_bits.extend(cur_bits);
+    }
+
+    let mut v = vec![false; every_batch_num * every_batch_num];
+    for i in 0..every_batch_num {
+        let mut pos_bits = vec![false; batch_size];
+        for j in 0..batch_size {
+            pos_bits[j] = q[j] ^ const_bdc_bits[i * batch_size + j];
+        }
+        let pos: usize = bits_to_u8_BE(&pos_bits).into();
+        println!("i= {},pos = {}", i, pos);
+        v[i * every_batch_num + (every_batch_num - pos - 1)] = true;
+    }
+    QMatrix {
+        v: v,
+        n: every_batch_num,
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QMatrix {
     //This structure is defined for the ConvMatrix

@@ -275,8 +275,7 @@ mod tests {
     use fss::mbeaver::*;
     use fss::u32_to_bits_BE;
 
-    use crate::offline_data::offline_batch_max::f_conv_matrix;
-    use fss::qmatrix::QMatrix;
+    use fss::qmatrix::*;
     use fss::mbeaver::MBeaverBlock;
     #[tokio::test]
     async fn f_max_batch_works(){
