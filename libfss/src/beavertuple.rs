@@ -1,3 +1,7 @@
+use crate::prg::PrgSeed;
+use crate::prg::FixedKeyPrgStream;
+use crate::bits_to_u32;
+
 use crate::{ring, Group};
 
 use super::RingElm;
@@ -5,6 +9,8 @@ use super::RingElm;
 // use std::fmt;
 use serde::Deserialize;
 use serde::Serialize;
+
+const NUMERIC_LEN:usize = 32;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BeaverTuple{
@@ -18,6 +24,55 @@ pub struct BeaverTuple{
 impl BeaverTuple{
     fn new(ra: RingElm, rb: RingElm, rc: RingElm) -> Self{
         BeaverTuple { a: ra, b: rb, ab: rc, delta_a:RingElm::zero(), delta_b:RingElm::zero(), }
+    }
+
+    pub fn genBeaver(beavertuples0: &mut Vec<BeaverTuple>, beavertuples1: &mut Vec<BeaverTuple>, seed: &PrgSeed, size:usize) {
+        let mut stream = FixedKeyPrgStream::new();
+        stream.set_key(&seed.key);
+
+        for i in 0..size{
+            let rd_bits = stream.next_bits(NUMERIC_LEN*5);
+            let a0 = RingElm::from( bits_to_u32(&rd_bits[..NUMERIC_LEN]) );
+            let b0 = RingElm::from( bits_to_u32(&rd_bits[NUMERIC_LEN..2*NUMERIC_LEN]) );
+
+            let a1 = RingElm::from( bits_to_u32(&rd_bits[2*NUMERIC_LEN..3*NUMERIC_LEN]) );
+            let b1 = RingElm::from( bits_to_u32(&rd_bits[3*NUMERIC_LEN..4*NUMERIC_LEN]));
+
+            let ab0 = RingElm::from( bits_to_u32(&rd_bits[4*NUMERIC_LEN..5*NUMERIC_LEN]) );
+
+            let mut a = RingElm::zero();
+            a.add(&a0);
+            a.add(&a1);
+
+            let mut b = RingElm::zero();
+            b.add(&b0);
+            b.add(&b1);
+
+            let mut ab = RingElm::one();
+            ab.mul(&a);
+            ab.mul(&b);
+
+            ab.sub(&ab0);
+
+            let beaver0 = BeaverTuple{
+                a: a0,
+                b: b0,
+                ab: ab0,
+                delta_a:RingElm::zero(),
+                delta_b:RingElm::zero(),
+            };
+
+            let beaver1 = BeaverTuple{
+                a: a1,
+                b: b1,
+                ab: ab,
+                delta_a:RingElm::zero(),
+                delta_b:RingElm::zero(),
+            };
+            beavertuples0.push(beaver0);
+            beavertuples1.push(beaver1);
+            
+        }
     }
     
     pub fn beaver_mul0(&mut self, alpha: RingElm, beta: RingElm)-> Vec<u8>{

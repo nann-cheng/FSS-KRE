@@ -1,0 +1,8 @@
+{
+    "rust-analyzer.linkedProjects": [
+        "./libmpc/Cargo.toml",
+        "./libmpc/Cargo.toml",
+        "./libmpc/Cargo.toml",
+        "./libfss/Cargo.toml"
+    ]
+}

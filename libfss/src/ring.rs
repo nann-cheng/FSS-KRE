@@ -45,7 +45,7 @@ impl RingElm {
     }
 
     pub fn print(&self){
-        println!("I am {}", self.value);
+        print!("{} ", self.value);
     }
 
     pub fn to_u32(&self) -> Option<u32> {

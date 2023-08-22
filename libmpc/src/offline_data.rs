@@ -121,60 +121,13 @@ impl BasicOffline{
         write_file("../data/qa0.bin", &q_numeric_0);
         write_file("../data/qa1.bin", &q_numeric_1);
 
-        self.genBeaver(&seed, beaver_amount);
-        q_boolean
-    }
-
-    pub fn genBeaver(&self, seed: &PrgSeed, size:usize){
-        let mut stream = FixedKeyPrgStream::new();
-        stream.set_key(&seed.key);
-
         let mut beavertuples0: Vec<BeaverTuple> = Vec::new();
         let mut beavertuples1: Vec<BeaverTuple> = Vec::new();
-        for i in 0..size{
-            let rd_bits = stream.next_bits(NUMERIC_LEN*5);
-            let a0 = RingElm::from( bits_to_u32(&rd_bits[..NUMERIC_LEN]) );
-            let b0 = RingElm::from( bits_to_u32(&rd_bits[NUMERIC_LEN..2*NUMERIC_LEN]) );
-
-            let a1 = RingElm::from( bits_to_u32(&rd_bits[2*NUMERIC_LEN..3*NUMERIC_LEN]) );
-            let b1 = RingElm::from( bits_to_u32(&rd_bits[3*NUMERIC_LEN..4*NUMERIC_LEN]));
-
-            let ab0 = RingElm::from( bits_to_u32(&rd_bits[4*NUMERIC_LEN..5*NUMERIC_LEN]) );
-
-            let mut a = RingElm::zero();
-            a.add(&a0);
-            a.add(&a1);
-
-            let mut b = RingElm::zero();
-            b.add(&b0);
-            b.add(&b1);
-
-            let mut ab = RingElm::one();
-            ab.mul(&a);
-            ab.mul(&b);
-
-            ab.sub(&ab0);
-
-            let beaver0 = BeaverTuple{
-                a: a0,
-                b: b0,
-                ab: ab0,
-                delta_a:RingElm::zero(),
-                delta_b:RingElm::zero(),
-            };
-
-            let beaver1 = BeaverTuple{
-                a: a1,
-                b: b1,
-                ab: ab,
-                delta_a:RingElm::zero(),
-                delta_b:RingElm::zero(),
-            };
-            beavertuples0.push(beaver0);
-            beavertuples1.push(beaver1);
-        }
+        BeaverTuple::genBeaver(&mut beavertuples0, &mut beavertuples1, &seed, beaver_amount);
         write_file("../data/beaver0.bin", &beavertuples0);
         write_file("../data/beaver1.bin", &beavertuples1);
+
+        q_boolean
     }
 }
 

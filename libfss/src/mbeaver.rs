@@ -167,6 +167,45 @@ pub fn product(delta: &Vec<bool>, b: &MBeaver, is_server: bool)->Result<bool, Bo
     r
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct MBeaverBlock {
+    pub n: usize, //batsize
+    pub mbs: Vec<MBeaver>, // a MBeaver Serie for 2..n terms product
+                  //pub b2d: Vec<MBeaver>  // s common beaver vetor for 2 terms product
+}
+impl MBeaverBlock {
+    pub fn gen(dim: usize) -> Self {
+        let mut mbss = Vec::<MBeaver>::new();
+        for i in 2..=dim {
+            let beaver = MBeaver::gen(i);
+            mbss.push(beaver);
+        }
+        Self { n: dim, mbs: mbss }
+    }
+
+    pub fn split(&self) -> (Self, Self) {
+        let mut mbs1 = Vec::<MBeaver>::new();
+        let mut mbs2 = Vec::<MBeaver>::new();
+
+        for i in 2..=self.n {
+            //changed: form 2 to n
+            let (b1, b2) = self.mbs[i - 2].split(); //changed: from i to i-2
+            mbs1.push(b1);
+            mbs2.push(b2);
+        }
+        (
+            Self {
+                n: self.n,
+                mbs: mbs1,
+            },
+            Self {
+                n: self.n,
+                mbs: mbs2,
+            },
+        )
+    }
+}
+
 fn print_bool_vec(bv: &Vec<bool>){
     print!("(");
     for i in 0..bv.len(){
