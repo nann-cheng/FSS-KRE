@@ -153,7 +153,7 @@ impl BatchKreOffline {
         let kbeavers_num = every_batch_num-1;
         BeaverTuple::genBeaver(&mut kbeavers_1, &mut kbeavers_2, &seed, kbeavers_num);
         
-        write_file("../data/cbeavers0.bin", &kbeavers_1);
-        write_file("../data/cbeavers1.bin", &kbeavers_2);
+        write_file("../data/kbeavers0.bin", &kbeavers_1);
+        write_file("../data/kbeavers1.bin", &kbeavers_2);
     }
 }
