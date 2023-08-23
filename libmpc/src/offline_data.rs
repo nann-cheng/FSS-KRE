@@ -232,6 +232,7 @@ impl BitKreOffline{
 }
 
 pub mod offline_batch_max;
+pub mod offline_batch_kre;
 
 #[cfg(test)]
 mod tests {

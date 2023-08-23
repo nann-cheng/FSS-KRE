@@ -148,7 +148,7 @@ impl BatchMaxOffline {
         }
 
         write_file("../data/binary_beavers0.bin", &binary_beavers_1);
-        write_file("../data/binary_beavers1.bin", &binary_beavers_1);
+        write_file("../data/binary_beavers1.bin", &binary_beavers_2);
     }
 }
 //assume batch_size <= 8
