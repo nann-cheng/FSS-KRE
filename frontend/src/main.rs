@@ -1,9 +1,9 @@
 use libmpc::mpc_party::{ MPCParty, bitwise_max, bitwise_kre};
-use libmpc::protocols::batch_max_proto::batch_max;
+use libmpc::protocols::batch_kre_proto::batch_kre;
 use libmpc::mpc_platform::NetInterface;
 use libmpc::offline_data::*;
 use fss::{prg::*, RingElm};
-use libmpc::offline_data::offline_batch_max::BatchMaxOffline;
+use libmpc::offline_data::offline_batch_kre::BatchKreOffline;
 use std::fs::File;
 use std::io::Write;
 use std::env;
@@ -17,8 +17,8 @@ pub const TEST_BATCH_KRE: bool = false;
 // pub const TEST_REAL_NETWORK: bool = false;
 
 const INPUT_SIZE: usize = 3usize;
-const INPUT_BITS: usize = 6usize;
-const BATCH_SIZE: usize = 3usize;
+const INPUT_BITS: usize = 4usize;
+const BATCH_SIZE: usize = 2usize;
 #[tokio::main]
 async fn main() {
     let mut is_server=false;
@@ -55,18 +55,18 @@ async fn main() {
 
     // let mut offlinedata = BitMaxOffline::new(if is_server{0u8} else {1u8});
     //let mut offlinedata: BitKreOffline = BitKreOffline::new();
-    let mut offlinedata = BatchMaxOffline::new();
+    let mut offlinedata = BatchKreOffline::new();
     offlinedata.loadData(if is_server{&0u8} else {&1u8});
 
     //let mut p: MPCParty<BitKreOffline> = MPCParty::new(offlinedata, netlayer);
-    let mut p: MPCParty<BatchMaxOffline> = MPCParty::<BatchMaxOffline>::new(offlinedata, netlayer);
+    let mut p: MPCParty<BatchKreOffline> = MPCParty::<BatchKreOffline>::new(offlinedata, netlayer);
     p.setup(INPUT_SIZE, INPUT_BITS);
 
     // let result = bitwise_max(&mut p, &x_share).await;
     //let kValue = RingElm::from(if is_server{0u32} else {2u32});
-    // let kValue = RingElm::from(if is_server{0u32} else {2u32});
+    let kValue = RingElm::from(if is_server{4u32} else {4u32});
     //let result = bitwise_kre(&mut p, &x_share, &kValue).await;
-    let result = batch_max(&mut p, &x_share, BATCH_SIZE).await;
+    let result = batch_kre(&mut p, &x_share, BATCH_SIZE, &kValue).await;
     for i in 0..INPUT_SIZE{
         print!("x_share[{}]=", i);
         for j in 0..INPUT_BITS{
