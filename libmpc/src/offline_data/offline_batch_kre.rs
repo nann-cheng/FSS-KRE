@@ -7,12 +7,12 @@ use fss::qmatrix::*;
 
 pub struct BatchKreOffline {
     pub base: BasicOffline,
-    pub let_k_share: Vec<DPFKey<BinElm>>, //dpf keys for less-than-equal
+    pub let_k_share: Vec<ICCKey>, //dpf keys for less-than-equal
     pub let_a_share: Vec<RingElm>,
     pub qelmmatrix_share: Vec<QElmMatrix>, // The convert matrix that is in the form of 1-dim, when using it, the two indexs should be transformed into one-dim index
-    pub qbeavers: Vec<BeaverTuple>, // common beaver vetor for 2 terms product in binary ring
-    pub cbeavers: Vec<BeaverTuple>, // the i-dim beaver tuples where i from 2 to 2^\omega in order
-    pub kbeavers: Vec<BeaverTuple>,
+    pub qbeavers: Vec<Vec<BeaverTuple>>, // common beaver vetor for 2 terms product in binary ring
+    pub cbeavers: Vec<Vec<BeaverTuple>>, // the i-dim beaver tuples where i from 2 to 2^\omega in order
+    pub kbeavers: Vec<Vec<BeaverTuple>>,
 }
 
 impl BatchKreOffline {
@@ -85,7 +85,6 @@ impl BatchKreOffline {
         let mut let_icc_r0: Vec<RingElm> = Vec::new();
         let mut let_icc_r1: Vec<RingElm> = Vec::new();
 
-
         for _ in 0..every_batch_num * block_num {
             // It needs call {\tao} f_znc in every block
             let let_r_bits = stream.next_bits(NUMERIC_LEN * 2);
@@ -105,10 +104,10 @@ impl BatchKreOffline {
             let_icc_r1.push(numeric_zero_r_1);
         }
 
-        write_file("../data/let_a0.bin", &let_icc_0);
-        write_file("../data/let_a1.bin", &let_icc_1);
-        write_file("../data/let_k0.bin", &let_icc_r0);
-        write_file("../data/let_k1.bin", &let_icc_r1);
+        write_file("../data/let_a0.bin", &let_icc_r0);
+        write_file("../data/let_a1.bin", &let_icc_r1);
+        write_file("../data/let_k0.bin", &let_icc_0);
+        write_file("../data/let_k1.bin", &let_icc_1);
 
         //Offline-Step-3.1 Q terms value generation
 
@@ -129,30 +128,53 @@ impl BatchKreOffline {
         write_file("../data/qelmmatrix0.bin", &qelmmatrix_share0);
         write_file("../data/qelmmatrix1.bin", &qelmmatrix_share1);
 
-        let mut qbeavers_1 = Vec::<BeaverTuple>::new();
-        let mut qbeavers_2 = Vec::<BeaverTuple>::new();
+        let mut qbeavers_1 = Vec::new();
+        let mut qbeavers_2 = Vec::new();
 
-        let qbeavers_num = every_batch_num * every_batch_num;
-        BeaverTuple::genBeaver(&mut qbeavers_1, &mut qbeavers_2, &seed, qbeavers_num);
-        
+        for i in 0..block_num {
+            let mut qbeavers_1_t = Vec::<BeaverTuple>::new();
+            let mut qbeavers_2_t = Vec::<BeaverTuple>::new();
+    
+            let qbeavers_num = every_batch_num * every_batch_num;
+            BeaverTuple::genBeaver(&mut qbeavers_1_t, &mut qbeavers_2_t, &seed, qbeavers_num);
+            
+            qbeavers_1.push(qbeavers_1_t);
+            qbeavers_2.push(qbeavers_2_t);
+        }
+
         write_file("../data/qbeavers0.bin", &qbeavers_1);
         write_file("../data/qbeavers1.bin", &qbeavers_2);
 
-        let mut cbeavers_1 = Vec::<BeaverTuple>::new();
-        let mut cbeavers_2 = Vec::<BeaverTuple>::new();
+        let mut cbeavers_1 = Vec::new();
+        let mut cbeavers_2 = Vec::new();
 
-        let cbeavers_num = every_batch_num-1;
-        BeaverTuple::genBeaver(&mut cbeavers_1, &mut cbeavers_2, &seed, cbeavers_num);
+        for i in 0..block_num{
+            let mut cbeavers_1_t = Vec::<BeaverTuple>::new();
+            let mut cbeavers_2_t = Vec::<BeaverTuple>::new();        
+            
+            let cbeavers_num = every_batch_num-1;
+            BeaverTuple::genBeaver(&mut cbeavers_1_t, &mut cbeavers_2_t, &seed, cbeavers_num);
         
+            cbeavers_1.push(cbeavers_1_t);
+            cbeavers_2.push(cbeavers_2_t);
+        }
+
         write_file("../data/cbeavers0.bin", &cbeavers_1);
         write_file("../data/cbeavers1.bin", &cbeavers_2);
 
-        let mut kbeavers_1 = Vec::<BeaverTuple>::new();
-        let mut kbeavers_2 = Vec::<BeaverTuple>::new();
+        let mut kbeavers_1 = Vec::new();
+        let mut kbeavers_2 = Vec::new();
 
-        let kbeavers_num = every_batch_num-1;
-        BeaverTuple::genBeaver(&mut kbeavers_1, &mut kbeavers_2, &seed, kbeavers_num);
-        
+        for i in 0..block_num{
+            let mut kbeavers_1_t = Vec::<BeaverTuple>::new();
+            let mut kbeavers_2_t = Vec::<BeaverTuple>::new();        
+            
+            let kbeavers_num = every_batch_num;
+            BeaverTuple::genBeaver(&mut kbeavers_1_t, &mut kbeavers_2_t, &seed, kbeavers_num);
+            
+            kbeavers_1.push(kbeavers_1_t);
+            kbeavers_2.push(kbeavers_2_t);
+        }
         write_file("../data/kbeavers0.bin", &kbeavers_1);
         write_file("../data/kbeavers1.bin", &kbeavers_2);
     }
