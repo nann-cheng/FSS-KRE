@@ -206,7 +206,7 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
             /******************************** END:    Line17 Compute y_i  ******************************************/
             //println!("Pre-y[{}]={:?}", block_order, y);
             let result = p.netlayer.exchange_bool_vec(y).await;
-            
+            println!("Pre-y[{}]={:?}", block_order, result);
             /******************************** START:  Line23 Compute k_star  ******************************************/
             let mut msg2  = Vec::<u8>::new();
 
