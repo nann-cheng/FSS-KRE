@@ -168,7 +168,7 @@ impl ICCKey
             None      => println!( "u32 Conversion failed!!" ),
         }
 
-        let beta = RingElm::from(1);
+        let beta = RingElm::one();
         let (key0, key1) = DCFKey::gen(&gamma_bits, &beta);
 
         let mut q_prime = q_bound.clone();
@@ -294,10 +294,11 @@ mod tests {
         let mut stream = FixedKeyPrgStream::new();
         stream.set_key(&seed.key);
         let alpha_bits = stream.next_bits(32usize);
-        
+        let beta_bits = stream.next_bits(32usize);
+
         let p_bound = RingElm::zero();
-        // let q_bound = RingElm::from((1<<31)-1);
-        let q_bound = RingElm::from(4);
+        let q_bound = RingElm::from((1<<31)-1);
+        //let q_bound = RingElm::from(4);
 
         // println!("u32 max is: {:?}",RingElm::from(u32::MAX) );
         println!("u32 u32_to_bits_BE test: {:?}", u32_to_bits_BE(32usize,4) );
@@ -305,41 +306,48 @@ mod tests {
         let (key0, key1) = ICCKey::gen(&alpha_bits,&p_bound, &q_bound);
 
         {   
-            for i in 0..5{
+            for i in 1..5{
                 let mut alpha_numeric = RingElm::from(bits_to_u32_BE(&alpha_bits));
-                alpha_numeric.add(&RingElm::from(i));
+                let mut alpha_1 = RingElm::from(bits_to_u32_BE(&beta_bits));
+
+                let mut alpha_0 = alpha_numeric.clone();
+                alpha_0.sub(&alpha_1);
+
+                //alpha_numeric.add(&RingElm::from(i));
+                alpha_0.sub(&RingElm::from(i));
+                alpha_1.sub(&RingElm::from(i));
 
                 println!("pass check {}",i);
 
                 let mut evalResult = RingElm::zero();
 
-                let word0 = key0.eval(&alpha_numeric);
+                let word0 = key0.eval(&alpha_0);
                 evalResult.add(&word0);
 
-                let word1 = key1.eval(&alpha_numeric);
-                evalResult.add(&word1);
-
-                assert_eq!(evalResult, RingElm::one());
-            }
-        }
-
-
-        {   
-            for i in 6..10{
-                let mut alpha_numeric = RingElm::from(bits_to_u32_BE(&alpha_bits));
-                alpha_numeric.add(&RingElm::from(i));
-
-                let mut evalResult = RingElm::zero();
-
-                let word0 = key0.eval(&alpha_numeric);
-                evalResult.add(&word0);
-
-                let word1 = key1.eval(&alpha_numeric);
+                let word1 = key1.eval(&alpha_1);
                 evalResult.add(&word1);
 
                 assert_eq!(evalResult, RingElm::zero());
             }
         }
+
+
+        // {   
+        //     for i in 6..10{
+        //         let mut alpha_numeric = RingElm::from(bits_to_u32_BE(&alpha_bits));
+        //         alpha_numeric.add(&RingElm::from(i));
+
+        //         let mut evalResult = RingElm::zero();
+
+        //         let word0 = key0.eval(&alpha_numeric);
+        //         evalResult.add(&word0);
+
+        //         let word1 = key1.eval(&alpha_numeric);
+        //         evalResult.add(&word1);
+
+        //         assert_eq!(evalResult, RingElm::zero());
+        //     }
+        // }
 
     }
 }

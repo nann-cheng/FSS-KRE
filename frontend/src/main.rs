@@ -64,7 +64,7 @@ async fn main() {
 
     // let result = bitwise_max(&mut p, &x_share).await;
     //let kValue = RingElm::from(if is_server{0u32} else {2u32});
-    let kValue = RingElm::from(if is_server{4u32} else {4u32});
+    let kValue = RingElm::from(if is_server{0u32} else {2u32});
     //let result = bitwise_kre(&mut p, &x_share, &kValue).await;
     let result = batch_kre(&mut p, &x_share, BATCH_SIZE, &kValue).await;
     for i in 0..INPUT_SIZE{

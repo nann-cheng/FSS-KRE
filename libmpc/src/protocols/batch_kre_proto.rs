@@ -67,10 +67,10 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
     println!("q={:?}", p.offlinedata.base.qb_share);
     /***********************************************************************************************************************************************/
     /********************************************************  START: Line6-25: Compute vector V   *************************************************/
+    let mut V = Vec::<RingElm>::new();
     for block_order in 0..block_num{ // for every block
         /*****************************************************************************************************************************/
         /********************************************************  START: Line6-14: Compute vector V   *******************************/
-        let mut V = Vec::<RingElm>::new();
         let mut tmp_state = Vec::<Vec::<EvalState>>::new();
         for i in 0..m{
             let tmp_state_i = Vec::<EvalState>::new();
@@ -105,7 +105,7 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
             let let_k_share = &p.offlinedata.let_k_share[block_order*every_batch_num..(block_order+1)*every_batch_num]; 
             //update0817: it needs to call f_znc {\tao} times in every block  
             let M = &p.offlinedata.qelmmatrix_share[block_order];
-            M.print();
+            //M.print();
             let qb = &mut p.offlinedata.qbeavers[block_order];
             let cb = &mut p.offlinedata.cbeavers[block_order];
             let kb = &mut p.offlinedata.kbeavers[block_order];
@@ -135,7 +135,7 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
             }
 
             /***********************************   END:   Line1 Compute v * M    **********************************/
-            //println!("V * M[{}]={:?}", block_order, V_M);
+            println!("V * M[{}]={:?}", block_order, V_M);
             /***********************************   START: Line2-5 Compute LessEqualThan   **********************************/
             for t in 1..every_batch_num+1{
                 let mut v_star = RingElm::zero();
@@ -144,26 +144,36 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
                 }
                 v_star_v.push(v_star);
 
-                v_star.add(&let_a_share[t-1]); 
+                println!("pre-ordered v_star[{}]={:?}", t-1, v_star);
                 v_star.sub(&k_star);
-
+                println!("pre-ordered v_star-k[{}]={:?}", t-1, v_star);
+                
+                v_star.add(&let_a_share[t-1]); 
+                
                 x_f_let_share.push(v_star);  
             }
 
-            let x_f_let = p.netlayer.exchange_ring_vec(x_f_let_share).await;
+            let x_f_let = p.netlayer.exchange_ring_vec(x_f_let_share.clone()).await;
 
             let mut cmp = Vec::<RingElm>::new();
             for i in 0..every_batch_num{ 
-                let y_fnzc: RingElm = let_k_share[i].eval(&x_f_let[i]);
-                
-                let mut cmp_i = y_fnzc;
-                if is_server{
-                    cmp_i.negate();
-                }
-                cmp.push(cmp_i);
+                cmp.push(let_k_share[i].eval(&x_f_let[i]));
             } 
+
+            //***DEBUG***
+            let mut cmp_b = Vec::<bool>::new();
+            for i in 0..every_batch_num{
+                if (RingElm::to_u32(&cmp[i]).unwrap() & 1) == 1 {
+                    cmp_b.push(true);
+                }else{
+                    cmp_b.push(false);
+                }
+            }
+            //***DEBUG***
+
             /***********************************   END:   Line2-5 Compute LessEqualThan    **********************************/
-            //println!("pre-ordered cmp[{}]={:?}", block_order, cmp);
+            println!("pre-ordered cmp[{}]={:?}", block_order, cmp);
+            println!("pre-ordered cmp[{}]={:?}", block_order, cmp_b);
             /******************************** START:  Line9-19 Compute bt  ******************************************/
             let mut bt = Vec::<RingElm>::new();
 
@@ -194,8 +204,9 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
             for i in 0..every_batch_num{
                 let const_i_bits = &const_bdc_bits[i*batch_size..(i+1)*batch_size];
                 for j in 0..batch_size{
-                    let mut bt_b;
-                    if bt[i].eq(&RingElm::one()){
+                    let bt_b;
+
+                    if (RingElm::to_u32(&bt[i]).unwrap() & 1) == 1 {
                         bt_b = true;
                     }else{
                         bt_b = false;
@@ -252,7 +263,7 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
         }
         else{
             for i in 0..batch_size{
-                cmp_bits[i+block_order*batch_size] =  p.offlinedata.base.qb_share[i+block_order*batch_size]; // A big change here, last version forgot xor the q_share 
+                cmp_bits[i+block_order*batch_size] = p.offlinedata.base.qb_share[i+block_order*batch_size]; // A big change here, last version forgot xor the q_share 
             }
         }
     }

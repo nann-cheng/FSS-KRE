@@ -2,6 +2,7 @@ use crate::*;
 use crate::prg::*;
 use serde::Deserialize;
 use serde::Serialize;
+use crate::ring;
 
 pub fn f_conv_matrix(q: &Vec<bool>, batch_size: usize) -> QMatrix {
     let every_batch_num: usize = 1 << batch_size;
@@ -99,6 +100,24 @@ impl QElmMatrix {
 
     pub fn Mutlocate(&mut self, i: usize, j: usize) -> &mut RingElm {
         &mut self.v[i * self.n + j]
+    }
+
+    pub fn split(&self) -> (Self, Self) {
+        let seed = PrgSeed::random();
+        let mut stream = FixedKeyPrgStream::new();
+        stream.set_key(&seed.key);
+
+        let mut v0 = Vec::<RingElm>::new();
+        let mut v1 = Vec::<RingElm>::new();
+
+        for i in 0..(self.n * self.n){
+            let (el0, el1) = self.v[i].share();
+            v0.push(el0);
+            v1.push(el1);
+        }
+        
+
+        (Self { v: v0, n: self.n }, Self { v: v1, n: self.n })
     }
 
     pub fn convertFromQMatrix(q: QMatrix) -> Self {
