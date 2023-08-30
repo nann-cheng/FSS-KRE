@@ -294,7 +294,6 @@ mod tests {
         let mut stream = FixedKeyPrgStream::new();
         stream.set_key(&seed.key);
         let alpha_bits = stream.next_bits(32usize);
-        let beta_bits = stream.next_bits(32usize);
 
         let p_bound = RingElm::zero();
         let q_bound = RingElm::from((1<<31)-1);
@@ -308,23 +307,18 @@ mod tests {
         {   
             for i in 1..5{
                 let mut alpha_numeric = RingElm::from(bits_to_u32_BE(&alpha_bits));
-                let mut alpha_1 = RingElm::from(bits_to_u32_BE(&beta_bits));
 
-                let mut alpha_0 = alpha_numeric.clone();
-                alpha_0.sub(&alpha_1);
-
-                //alpha_numeric.add(&RingElm::from(i));
-                alpha_0.sub(&RingElm::from(i));
-                alpha_1.sub(&RingElm::from(i));
+                alpha_numeric.sub(&RingElm::from(i));
+                println!("a[{}] {:?}", i, alpha_numeric);
 
                 println!("pass check {}",i);
 
                 let mut evalResult = RingElm::zero();
 
-                let word0 = key0.eval(&alpha_0);
+                let word0 = key0.eval(&alpha_numeric);
                 evalResult.add(&word0);
 
-                let word1 = key1.eval(&alpha_1);
+                let word1 = key1.eval(&alpha_numeric);
                 evalResult.add(&word1);
 
                 assert_eq!(evalResult, RingElm::zero());

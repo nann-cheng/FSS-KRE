@@ -13,7 +13,7 @@ extern crate lazy_static;
 mod ring;
 pub use crate::ring::RingElm;
 
-mod binary;
+pub mod binary;
 pub use crate::binary::BinElm;
 
 

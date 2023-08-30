@@ -95,7 +95,7 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
         }
         /********************************************************  END  : Line6-14: Compute vector V   *******************************/
         /*****************************************************************************************************************************/
-        println!("V[{}]={:?}", block_order, V);
+        //println!("V[{}]={:?}", block_order, V);
         /*****************************************************************************************************************************/
         /********************************************************  START: F_BatchMax  Line15 *****************************************/
         let f_batch_kre = {
@@ -135,7 +135,7 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
             }
 
             /***********************************   END:   Line1 Compute v * M    **********************************/
-            println!("V * M[{}]={:?}", block_order, V_M);
+            //println!("V * M[{}]={:?}", block_order, V_M);
             /***********************************   START: Line2-5 Compute LessEqualThan   **********************************/
             for t in 1..every_batch_num+1{
                 let mut v_star = RingElm::zero();
@@ -143,17 +143,18 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
                     v_star.add(&V_M[j].clone());
                 }
                 v_star_v.push(v_star);
-
-                println!("pre-ordered v_star[{}]={:?}", t-1, v_star);
-                v_star.sub(&k_star);
-                println!("pre-ordered v_star-k[{}]={:?}", t-1, v_star);
                 
+                //println!("pre-ordered v_star[{}]={:?}", t-1, v_star);
+                v_star.sub(&k_star);
+                //println!("pre-ordered v_star-k[{}]={:?}", t-1, v_star);
+                
+                //println!("a_share[{}]={:?}", t-1, let_a_share[t-1]);
                 v_star.add(&let_a_share[t-1]); 
                 
                 x_f_let_share.push(v_star);  
             }
 
-            let x_f_let = p.netlayer.exchange_ring_vec(x_f_let_share.clone()).await;
+            let mut x_f_let = p.netlayer.exchange_ring_vec(x_f_let_share.clone()).await;
 
             let mut cmp = Vec::<RingElm>::new();
             for i in 0..every_batch_num{ 
@@ -182,8 +183,13 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
             let mut msg1  = Vec::<u8>::new();
 
             for t in 1..every_batch_num{
-                let mut cmp_t = RingElm::one();
+                let mut cmp_t = RingElm::zero();
+                if is_server{
+                    cmp_t.add(&RingElm::one());
+                } 
+
                 cmp_t.sub(&cmp[t-1]);
+                println!("cmp_t after sub[{}]={:?}", t, cmp_t);
                 msg1.append(&mut cb[t-1].beaver_mul0(cmp[t], cmp_t));     
             }
 

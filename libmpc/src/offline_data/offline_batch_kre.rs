@@ -1,9 +1,9 @@
 use super::*;
 use fss::ic::ICCKey;
 use fss::prg::FixedKeyPrgStream;
-use fss::{bits_to_u32, bits_to_u8_BE, u32_to_bits, u32_to_bits_BE};
 use fss::mbeaver::*;
 use fss::qmatrix::*;
+use fss::bits_to_u32_BE;
 
 pub struct BatchKreOffline {
     pub base: BasicOffline,
@@ -89,8 +89,8 @@ impl BatchKreOffline {
             // It needs call {\tao} f_znc in every block
             let let_r_bits = stream.next_bits(NUMERIC_LEN * 2);
 
-            let mut numeric_zero_r_1 = RingElm::from(bits_to_u32(&let_r_bits[..NUMERIC_LEN]));
-            let numeric_zero_r_0 = RingElm::from(bits_to_u32(&let_r_bits[NUMERIC_LEN..]));
+            let mut numeric_zero_r_1 = RingElm::from(bits_to_u32_BE(&let_r_bits[..NUMERIC_LEN]));
+            let numeric_zero_r_0 = RingElm::from(bits_to_u32_BE(&let_r_bits[NUMERIC_LEN..]));
             numeric_zero_r_1.sub(&numeric_zero_r_0);
             
             let p_bound = RingElm::zero();
@@ -100,8 +100,8 @@ impl BatchKreOffline {
 
             let_icc_0.push(k0);
             let_icc_1.push(k1);
-            let_icc_r0.push(numeric_zero_r_0);
-            let_icc_r1.push(numeric_zero_r_1);
+            let_icc_r0.push(numeric_zero_r_1);
+            let_icc_r1.push(numeric_zero_r_0);
         }
 
         write_file("../data/let_a0.bin", &let_icc_r0);
