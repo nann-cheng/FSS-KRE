@@ -120,8 +120,12 @@ impl BatchKreOffline {
                 &q_boolean[i * batch_size..(i + 1) * batch_size].to_vec(),
                 batch_size,
             ); //changed 08-17
+            q_matrix_i.print();
             let q_elm_matrix_i = QElmMatrix::convertFromQMatrix(q_matrix_i);
+            q_elm_matrix_i.print();
             let (qm0, qm1) = q_elm_matrix_i.split();
+            qm0.print();
+            qm1.print();
             qelmmatrix_share0.push(qm0);
             qelmmatrix_share1.push(qm1);
         }

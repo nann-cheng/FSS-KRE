@@ -64,7 +64,7 @@ async fn main() {
 
     // let result = bitwise_max(&mut p, &x_share).await;
     //let kValue = RingElm::from(if is_server{0u32} else {2u32});
-    let kValue = RingElm::from(if is_server{0u32} else {1u32});
+    let kValue = RingElm::from(if is_server{1u32} else {1u32});
     //let result = bitwise_kre(&mut p, &x_share, &kValue).await;
     let result = batch_kre(&mut p, &x_share, BATCH_SIZE, &kValue).await;
     for i in 0..INPUT_SIZE{
@@ -187,7 +187,7 @@ mod test
         let every_batch_num = 1 << batch_size;
         let offline = BatchKreOffline::new();
         offline.genData(&PrgSeed::zero(), input_size, input_bits, batch_size);
-        //BatchMaxOffline::genData(&self, seed, input_size, input_bits, batch_size, cbeavers_num)
+        //BatchKreOffline::genData(&self, seed, input_size, input_bits, batch_size);
     }
 
     //#[test]

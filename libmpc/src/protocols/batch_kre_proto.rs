@@ -20,7 +20,8 @@ pub fn batch_eval_of_idpf(idpf: &IDPFKey<RingElm>, old_state: &EvalState, x_batc
 //Assume n % batchsize == 0
 pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, batch_size: usize, kValue: &RingElm) ->Vec<bool>{
     let mut k_star = kValue.clone();
-    
+    println!("k inital {:?}", k_star);
+
     let m: usize = p.m;
     let n = p.n;
     println!("m={}, n={}", m, n);
@@ -39,7 +40,7 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
     }
     /******************************************************  END:   Line8 Comute \tao F_{BDC} i in 0..{\tao} ***************************************/
     /***********************************************************************************************************************************************/
-    
+    println!("const_bdc {:?}", const_bdc_bits);
     /***********************************************************************************************************************************************/
     /******************************************************  START: Line2-5: Reveal t = x^q^{\alpha}  **********************************************/
     let mut mask_bits = Vec::<bool>::new();//t in the paper, it is a bit vector of length n
@@ -67,10 +68,10 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
     println!("q={:?}", p.offlinedata.base.qb_share);
     /***********************************************************************************************************************************************/
     /********************************************************  START: Line6-25: Compute vector V   *************************************************/
-    let mut V = Vec::<RingElm>::new();
     for block_order in 0..block_num{ // for every block
         /*****************************************************************************************************************************/
         /********************************************************  START: Line6-14: Compute vector V   *******************************/
+        let mut V_c = Vec::<RingElm>::new();
         let mut tmp_state = Vec::<Vec::<EvalState>>::new();
         for i in 0..m{
             let tmp_state_i = Vec::<EvalState>::new();
@@ -91,11 +92,11 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
                 v_item.add(&beta);
                 //let (state, beta) = p.offlinedata.base.k_share[k].eval_bit(state, dir)
             }
-            V.push(v_item);
+            V_c.push(v_item);
         }
         /********************************************************  END  : Line6-14: Compute vector V   *******************************/
         /*****************************************************************************************************************************/
-        //println!("V[{}]={:?}", block_order, V);
+        println!("V[{}]={:?}", block_order, V_c);
         /*****************************************************************************************************************************/
         /********************************************************  START: F_BatchMax  Line15 *****************************************/
         let f_batch_kre = {
@@ -104,8 +105,8 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
             let let_a_share = &p.offlinedata.let_a_share[block_order*every_batch_num..(block_order+1)*every_batch_num];
             let let_k_share = &p.offlinedata.let_k_share[block_order*every_batch_num..(block_order+1)*every_batch_num]; 
             //update0817: it needs to call f_znc {\tao} times in every block  
-            let M = &p.offlinedata.qelmmatrix_share[block_order];
-            //M.print();
+            let M_qel = &p.offlinedata.qelmmatrix_share[block_order];
+            M_qel.print();
             let qb = &mut p.offlinedata.qbeavers[block_order];
             let cb = &mut p.offlinedata.cbeavers[block_order];
             let kb = &mut p.offlinedata.kbeavers[block_order];
@@ -117,7 +118,7 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
 
             for i in 0..every_batch_num{
                 for j in 0..every_batch_num{
-                    msg0.append(&mut qb[i * every_batch_num + j].beaver_mul0(V[j], M.locate(i, j)));
+                    msg0.append(&mut qb[i * every_batch_num + j].beaver_mul0(V_c[j], M_qel.locate(i, j)));
                 }
             }
 
@@ -135,7 +136,7 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
             }
 
             /***********************************   END:   Line1 Compute v * M    **********************************/
-            //println!("V * M[{}]={:?}", block_order, V_M);
+            println!("V * M[{}]={:?}", block_order, V_M);
             /***********************************   START: Line2-5 Compute LessEqualThan   **********************************/
             for t in 1..every_batch_num+1{
                 let mut v_star = RingElm::zero();
@@ -189,7 +190,7 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
                 } 
 
                 cmp_t.sub(&cmp[t-1]);
-                println!("cmp_t after sub[{}]={:?}", t, cmp_t);
+                //println!("cmp_t after sub[{}]={:?}", t, cmp_t);
                 msg1.append(&mut cb[t-1].beaver_mul0(cmp[t], cmp_t));     
             }
 
@@ -205,6 +206,7 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
             let mut y = Vec::<bool>::new();
             for i in 0..batch_size{
                 y.push(q_share[i]);
+                //y.push(false);
             }
 
             for i in 0..every_batch_num{
@@ -238,11 +240,10 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
             let otherMsg2 = p.netlayer.exchange_byte_vec(&msg2.clone()).await;//Perform Network communication
         
             k_star = RingElm::zero();
-            k_star.add(&kb[0].beaver_mul1(is_server, &otherMsg2[0..8].to_vec()));
-
-            for t in 1..every_batch_num{
+            for t in 0..every_batch_num{
                 k_star.add(&kb[t].beaver_mul1(is_server, &otherMsg2[8 * t..8 * (t + 1)].to_vec()));
             }
+            println!("k_star[{}] {:?}", block_order, k_star);
             /******************************** END:    Line23 Compute k_star  ******************************************/
             
             result
@@ -265,11 +266,13 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
         if is_server{ //Here, I fixed a big bug, update:0819
             for i in 0..batch_size{
                 cmp_bits[i+block_order*batch_size] = f_batch_kre[i] ^ p.offlinedata.base.qb_share[i+block_order*batch_size]; // A big change here, last version forgot xor the q_share 
+                //cmp_bits[i+block_order*batch_size] = f_batch_kre[i] 
             }
         }
         else{
             for i in 0..batch_size{
                 cmp_bits[i+block_order*batch_size] = p.offlinedata.base.qb_share[i+block_order*batch_size]; // A big change here, last version forgot xor the q_share 
+                //cmp_bits[i+block_order*batch_size] = false;
             }
         }
     }
