@@ -131,7 +131,7 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
 
             for i in 0..every_batch_num{
                 for j in 0..every_batch_num{
-                    V_M[j].add(& qb[i * every_batch_num + j].beaver_mul1(is_server, &otherMsg0[8 * (i *  every_batch_num + j)..8 * (i *  every_batch_num + j + 1)].to_vec()));
+                    V_M[i].add(& qb[i * every_batch_num + j].beaver_mul1(is_server, &otherMsg0[8 * (i *  every_batch_num + j)..8 * (i *  every_batch_num + j + 1)].to_vec()));
                 }
             }
 
