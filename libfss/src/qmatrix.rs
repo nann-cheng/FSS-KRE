@@ -27,7 +27,7 @@ pub fn f_conv_matrix(q: &Vec<bool>, batch_size: usize) -> QMatrix {
             pos_bits[j] = q[j] ^ const_bdc_bits[i * batch_size + j];
         }
         let pos: usize = bits_to_u8_BE(&pos_bits).into();
-        println!("i= {},pos = {}", i, pos);
+        //println!("i= {},pos = {}", i, pos);
         v[i * every_batch_num + (every_batch_num - pos - 1)] = true;
     }
     QMatrix {

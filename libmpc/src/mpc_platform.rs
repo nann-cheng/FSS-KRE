@@ -86,11 +86,10 @@ impl NetInterface{
     }
 
     pub async fn exchange_bool_vec(&mut self, msg: Vec<bool>)->Vec<bool>{
-        let mut buf: [u8; 1024] = [0; 1024];
-        
         let x_msg: Vec<u8> = msg.clone().iter().map(|x| if *x == true {1} else {0}).collect(); // convert the bool vec to u8 vec such that the message can be convoyed in the channel
         let xmsg_len = x_msg.len();
-        
+        let mut buf: Vec<u8> = vec![0; xmsg_len];
+
         if let Err(err) = self.writer.write_all(&x_msg.as_slice()).await{
             eprintln!("Write to partner failed:{}", err);
             std::process::exit(-1);
@@ -123,13 +122,14 @@ impl NetInterface{
     }
 
     pub async fn exchange_ring_vec(&mut self, msg: Vec<RingElm>) -> Vec<RingElm>{
-        let mut buf: [u8; 1024] = [0; 1024];
         let mut x_msg: Vec<u8> = Vec::<u8>::new();
         for e in &msg{
             x_msg.append(&mut e.to_u32().unwrap().to_be_bytes().to_vec());
         }//convert u32 stream to u8 stream
 
         let xmsg_len = x_msg.len();
+        let mut buf: Vec<u8> = vec![0; xmsg_len];
+
         if let Err(err) = self.writer.write_all(&x_msg.as_slice()).await{
             eprintln!("Write to partner failed:{}", err);
             std::process::exit(-1);
