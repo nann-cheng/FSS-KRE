@@ -15,11 +15,11 @@ pub const TEST_BATCH_KRE: bool = false;
 // pub const TEST_SIMULATE_NETWORK: bool = false;
 // pub const TEST_REAL_NETWORK: bool = false;
 
-const INPUT_SIZE: usize = 1000usize;
+const INPUT_SIZE: usize = 10000usize;
 const INPUT_BITS: usize = 32usize;
-const BATCH_SIZE: usize = 4usize;
+const BATCH_SIZE: usize = 2usize;
 
-const K_GLOBAL: u32 = 5;
+const K_GLOBAL: u32 = 1;
 
 #[tokio::main]
 async fn main() {
@@ -108,13 +108,13 @@ mod test
     use libmpc::offline_data::*;
     use libmpc::offline_data::offline_batch_kre::*;
     use fss::prg::*;
-    use crate::{INPUT_SIZE,INPUT_BITS, BATCH_SIZE};
+    use crate::{INPUT_SIZE,INPUT_BITS,BATCH_SIZE,K_GLOBAL};
     use std::slice;
     
-    const K_GLOBAL: usize = 5;
-
     #[tokio::test]
     async fn kre_works(){
+        let k_global: usize = K_GLOBAL as usize;
+
         fn find_k_ranked_max<T: Ord + Clone>(slice: &mut [T], k: usize) -> T {
             let index = k.saturating_sub(1);
             slice.select_nth_unstable_by(index, |a, b| b.cmp(a));
@@ -179,16 +179,14 @@ mod test
             v.push(e);
         } // convert x-s to u32-s
 
-        let kre = find_k_ranked_max(&mut v, K_GLOBAL);
-
-        //let x_max = v.iter().max().unwrap();
+        let kre = find_k_ranked_max(&mut v, k_global);
 
         let mut c = c0;
         for i in 0..c.len(){
             c[i] = c[i] ^ c1[i];
         } 
         let r = bv2uint(c);
-        println!("max={:?}", r);
+        println!("kre={:?}", r);
         assert_eq!(kre, r);
     }
 
@@ -200,77 +198,6 @@ mod test
         let every_batch_num = 1 << batch_size;
         let offline = BatchKreOffline::new();
         offline.genData(&PrgSeed::zero(), input_size, input_bits, batch_size);
-        //BatchKreOffline::genData(&self, seed, input_size, input_bits, batch_size);
     }
 
-    //#[test]
-    // fn test_result(){
-    //     let mut x0 = Vec::<bool>::new();
-    //     let mut x1 = Vec::<bool>::new();
-    //     let mut c0 = Vec::<bool>::new();
-    //     let mut c1 = Vec::<bool>::new();
-    //     let mut buf = Vec::<u8>::new();
-        
-    //     /*Read x_share[0] */
-    //     let mut f_x0 = File::open("../test/x0.bin").expect("Open file failed");
-    //     f_x0.read_to_end(&mut buf).expect("Read file error!");
-    //     x0 = bincode::deserialize(&buf).expect("Deserialize key-share Error");
-
-    //     /*Read x_share[1] */
-    //     buf.clear();
-    //     let mut f_x1 = File::open("../test/x1.bin").expect("Open file failed");
-    //     f_x1.read_to_end(&mut buf).expect("Read file error!");
-    //     x1 = bincode::deserialize(&buf).expect("Deserialize key-share Error");
-
-    //     /*Read cmp[0] */
-    //     buf.clear();
-    //     let mut f_c0 = File::open("../test/cmp0.bin").expect("Open file failed");
-    //     f_c0.read_to_end(&mut buf).expect("Read file error!");
-    //     c0 = bincode::deserialize(&buf).expect("Deserialize key-share Error");
-
-    //      /*Read cmp[1] */
-    //      buf.clear();
-    //      let mut f_c1 = File::open("../test/cmp1.bin").expect("Open file failed");
-    //      f_c1.read_to_end(&mut buf).expect("Read file error!");
-    //      c1 = bincode::deserialize(&buf).expect("Deserialize key-share Error");
-
-    //     assert_eq!(x0.len(), x1.len());
-    //     assert_eq!(c0.len(), INPUT_BITS);
-    //     assert_eq!(c1.len(), INPUT_BITS);
-
-    //     let bv2uint = |b: Vec<bool>|{
-    //         let mut v: u32 = 0;
-            
-    //         for e in b.iter()
-    //         {
-    //             v = v << 1;
-    //             if *e {
-    //                 v += 1;
-    //             }
-    //         }
-    //         v
-    //     };
-        
-    //     let mut x = x0;
-
-    //     for i in 0..x.len(){
-    //         x[i] = x[i] ^ x1[i];
-    //     }   //reconstruct the x = x0^x1
-
-    //     let mut v = Vec::<u32>::new();
-    //     for i in 0..INPUT_SIZE{
-    //         let e = bv2uint(x[i*INPUT_BITS..(i+1)*INPUT_BITS].to_vec());
-    //         v.push(e);
-    //     } // convert x-s to u32-s
-
-    //     let x_max = v.iter().max().unwrap();
-
-    //     let mut c = c0;
-    //     for i in 0..c.len(){
-    //         c[i] = c[i] ^ c1[i];
-    //     } 
-    //     let r = bv2uint(c);
-    //     println!("max={:?}", r);
-    //     assert_eq!(*x_max, r);    
-    // }
 }
