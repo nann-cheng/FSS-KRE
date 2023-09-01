@@ -74,7 +74,6 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
         /*****************************************************************************************************************************/
         /********************************************************  START: Line6-14: Compute vector V   *******************************/
         let mut V_c = Vec::<RingElm>::new();
-        //let mut tmp_state = Vec::<Vec::<EvalState>>::new();
         let mut tmp_state = Arc::new(Mutex::new(Vec::<Vec::<EvalState>>::new()));
         for i in 0..m{
             let tmp_state_i = Vec::<EvalState>::new();
@@ -82,26 +81,9 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
             tmp_state.lock().unwrap().push(tmp_state_i);
         }   //prepare for m state vectors, each of which contains  {\tao} state
 
-        // let index_start = block_order * batch_size;
-        // let index_end: usize = (block_order+1) * batch_size; //change them out from the loop
-        // for i in 0..every_batch_num{ // for every \{tao} - j
-        //     let mut v_item = RingElm::from(0);
-        //     for j in 0..m{
-        //         let x_idpf = bits_Xor(&const_bdc_bits[i*batch_size..(i+1)*batch_size].to_vec(), &t[(j*n+index_start)..(j*n+index_end)].to_vec());//line8
-        //         //let (state_new, beta) = p.offlinedata.base.k_share[j].eval_bit(&old_state[j], &x_idpf[0..batch_size]);
-        //         let old_state = idpf_state[j].clone(); // The initial state of the m-th idpf is idpf_state[i]
-        //         let (state_new, beta) = batch_eval_of_idpf(&p.offlinedata.base.k_share[j], &old_state, &x_idpf, batch_size);
-        //         tmp_state[j].push(state_new); //the j-th state for the k-th idpf
-        //         v_item.add(&beta);
-        //         //let (state, beta) = p.offlinedata.base.k_share[k].eval_bit(state, dir)
-        //     }
-        //     V_c.push(v_item);
-        // }
-
         let index_start = block_order * batch_size;
         let index_end: usize = (block_order+1) * batch_size; //change them out from the loop
         for i in 0..every_batch_num{ // for every \{tao} - j
-            //let mut v_item = RingElm::from(0);
             let mut v_item = Arc::new(Mutex::new(RingElm::from(0)));
             (0..m).into_par_iter().for_each(|j| {
                 let x_idpf = bits_Xor(&const_bdc_bits[i * batch_size..(i + 1) * batch_size].to_vec(), &t[(j * n + index_start)..(j * n + index_end)].to_vec());
