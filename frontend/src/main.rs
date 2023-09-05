@@ -1,9 +1,10 @@
-use libmpc::mpc_party::{ MPCParty, bitwise_max, bitwise_kre};
-use libmpc::protocols::batch_kre_proto::batch_kre;
+use libmpc::mpc_party::MPCParty;
+use libmpc::protocols::bitwise_kre::*;
+use libmpc::protocols::batch_kre_proto::*;
 use libmpc::mpc_platform::NetInterface;
 use libmpc::offline_data::*;
 use fss::{prg::*, RingElm};
-use libmpc::offline_data::offline_batch_kre::BatchKreOffline;
+use libmpc::offline_data::offline_bitwise_kre::*;
 use std::fs::File;
 use std::io::Write;
 use std::env;
@@ -18,7 +19,7 @@ pub const TEST_BATCH_KRE: bool = false;
 const INPUT_SIZE: usize = 1000usize;
 const INPUT_BITS: usize = 16usize;
 
-const K_GLOBAL: u32 = 3;
+const K_GLOBAL: u32 = 1;
 
 #[tokio::main]
 async fn main() {
@@ -106,6 +107,7 @@ mod test
     use std::io::Read;
     use libmpc::offline_data::*;
     use libmpc::offline_data::offline_batch_kre::*;
+    use libmpc::offline_data::offline_bitwise_kre::*;
     use fss::prg::*;
     use crate::{INPUT_SIZE,INPUT_BITS,K_GLOBAL};
     use std::slice;
