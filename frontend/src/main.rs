@@ -15,11 +15,10 @@ pub const TEST_BATCH_KRE: bool = false;
 // pub const TEST_SIMULATE_NETWORK: bool = false;
 // pub const TEST_REAL_NETWORK: bool = false;
 
-const INPUT_SIZE: usize = 10000usize;
-const INPUT_BITS: usize = 32usize;
-const BATCH_SIZE: usize = 2usize;
+const INPUT_SIZE: usize = 1000usize;
+const INPUT_BITS: usize = 16usize;
 
-const K_GLOBAL: u32 = 1;
+const K_GLOBAL: u32 = 3;
 
 #[tokio::main]
 async fn main() {
@@ -57,18 +56,18 @@ async fn main() {
 
     // let mut offlinedata = BitMaxOffline::new(if is_server{0u8} else {1u8});
     //let mut offlinedata: BitKreOffline = BitKreOffline::new();
-    let mut offlinedata = BatchKreOffline::new();
+    let mut offlinedata = BitKreOffline::new();
     offlinedata.loadData(if is_server{&0u8} else {&1u8});
 
     //let mut p: MPCParty<BitKreOffline> = MPCParty::new(offlinedata, netlayer);
-    let mut p: MPCParty<BatchKreOffline> = MPCParty::<BatchKreOffline>::new(offlinedata, netlayer);
+    let mut p: MPCParty<BitKreOffline> = MPCParty::<BitKreOffline>::new(offlinedata, netlayer);
     p.setup(INPUT_SIZE, INPUT_BITS);
 
     // let result = bitwise_max(&mut p, &x_share).await;
     //let kValue = RingElm::from(if is_server{0u32} else {2u32});
     let kValue = RingElm::from(if is_server{0u32} else {K_GLOBAL});
     //let result = bitwise_kre(&mut p, &x_share, &kValue).await;
-    let result = batch_kre(&mut p, &x_share, BATCH_SIZE, &kValue).await;
+    let result = bitwise_kre(&mut p, &x_share, &kValue).await;
     for i in 0..INPUT_SIZE{
         print!("x_share[{}]=", i);
         for j in 0..INPUT_BITS{
@@ -108,7 +107,7 @@ mod test
     use libmpc::offline_data::*;
     use libmpc::offline_data::offline_batch_kre::*;
     use fss::prg::*;
-    use crate::{INPUT_SIZE,INPUT_BITS,BATCH_SIZE,K_GLOBAL};
+    use crate::{INPUT_SIZE,INPUT_BITS,K_GLOBAL};
     use std::slice;
     
     #[tokio::test]
@@ -194,10 +193,8 @@ mod test
     fn batch_kre_gen_offlinedata(){
         let input_size = INPUT_SIZE;
         let input_bits = INPUT_BITS;
-        let batch_size = BATCH_SIZE;
-        let every_batch_num = 1 << batch_size;
-        let offline = BatchKreOffline::new();
-        offline.genData(&PrgSeed::zero(), input_size, input_bits, batch_size);
+        let offline = BitKreOffline::new();
+        offline.genData(&PrgSeed::zero(), input_size, input_bits);
     }
 
 }

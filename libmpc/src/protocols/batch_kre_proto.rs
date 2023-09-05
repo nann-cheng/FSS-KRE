@@ -74,25 +74,42 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
         /*****************************************************************************************************************************/
         /********************************************************  START: Line6-14: Compute vector V   *******************************/
         let mut V_c = Vec::<RingElm>::new();
-        let mut tmp_state = Arc::new(Mutex::new(Vec::<Vec::<EvalState>>::new()));
+        //let mut tmp_state = Arc::new(Mutex::new(Vec::<Vec::<EvalState>>::new()));
+        let mut tmp_state = Vec::<Vec::<EvalState>>::new();
+
         for i in 0..m{
             let tmp_state_i = Vec::<EvalState>::new();
             //tmp_state_i.push(idpf_state[i].clone()); // initialize the j-th idpf's state 
-            tmp_state.lock().unwrap().push(tmp_state_i);
+            //tmp_state.lock().unwrap().push(tmp_state_i);
+            tmp_state.push(tmp_state_i);
         }   //prepare for m state vectors, each of which contains  {\tao} state
+
+        // let index_start = block_order * batch_size;
+        // let index_end: usize = (block_order+1) * batch_size; //change them out from the loop
+        // for i in 0..every_batch_num{ // for every \{tao} - j
+        //     let mut v_item = Arc::new(Mutex::new(RingElm::from(0)));
+        //     (0..m).into_par_iter().for_each(|j| {
+        //         let x_idpf = bits_Xor(&const_bdc_bits[i * batch_size..(i + 1) * batch_size].to_vec(), &t[(j * n + index_start)..(j * n + index_end)].to_vec());
+        //         let old_state = idpf_state[j].clone(); // The initial state of the m-th idpf is idpf_state[i]
+        //         let (state_new, beta) = batch_eval_of_idpf(&p.offlinedata.base.k_share[j], &old_state, &x_idpf, batch_size);
+        //         tmp_state.lock().unwrap()[j].push(state_new); // The j-th state for the k-th idpf
+        //         v_item.lock().unwrap().add(&beta);
+        //     });
+        //     V_c.push(*v_item.lock().unwrap());
+        // }
 
         let index_start = block_order * batch_size;
         let index_end: usize = (block_order+1) * batch_size; //change them out from the loop
         for i in 0..every_batch_num{ // for every \{tao} - j
-            let mut v_item = Arc::new(Mutex::new(RingElm::from(0)));
-            (0..m).into_par_iter().for_each(|j| {
-                let x_idpf = bits_Xor(&const_bdc_bits[i * batch_size..(i + 1) * batch_size].to_vec(), &t[(j * n + index_start)..(j * n + index_end)].to_vec());
+            let mut v_item = RingElm::from(0);
+            for j in 0..m{
+                let x_idpf = bits_Xor(&const_bdc_bits[i*batch_size..(i+1)*batch_size].to_vec(), &t[(j*n+index_start)..(j*n+index_end)].to_vec());//line8
                 let old_state = idpf_state[j].clone(); // The initial state of the m-th idpf is idpf_state[i]
                 let (state_new, beta) = batch_eval_of_idpf(&p.offlinedata.base.k_share[j], &old_state, &x_idpf, batch_size);
-                tmp_state.lock().unwrap()[j].push(state_new); // The j-th state for the k-th idpf
-                v_item.lock().unwrap().add(&beta);
-            });
-            V_c.push(*v_item.lock().unwrap());
+                tmp_state[j].push(state_new); //the j-th state for the k-th idpf
+                v_item.add(&beta);
+            }
+            V_c.push(v_item);
         }
         /********************************************************  END  : Line6-14: Compute vector V   *******************************/
         /*****************************************************************************************************************************/
@@ -244,7 +261,7 @@ pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, ba
         }  //line 17: rebuild the numerical max num
         println!("path_eval={}", path_eval);
         for i in 0..m{
-            idpf_state[i] = tmp_state.lock().unwrap()[i][every_batch_num-path_eval-1].clone();  //update 0819: a big bug fixed here
+            idpf_state[i] = tmp_state[i][every_batch_num-path_eval-1].clone();  //update 0819: a big bug fixed here
         } // Line18-20: update the idpf-s
 
         if is_server{ //Here, I fixed a big bug, update:0819

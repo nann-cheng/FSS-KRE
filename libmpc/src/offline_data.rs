@@ -193,7 +193,6 @@ impl BitMaxOffline{
         write_file("../data/zc_k1.bin", &zero_dpf_1);
     }
 }
-
 pub struct BitKreOffline{
     pub base: BasicOffline,
     pub condeval_k_share: Vec<CondEvalKey>,//CondEval keys for lessThan check
