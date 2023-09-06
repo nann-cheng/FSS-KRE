@@ -4,27 +4,22 @@ use fss::RingElm;
 use fss::BinElm;
 use fss::mbeaver::MBeaver;
 use fss::mbeaver::product;
+use rayon::prelude::*;
+use rayon::ThreadPoolBuilder;
+use std::sync::{Arc, Mutex};
 
 use crate::offline_data::offline_batch_max::BatchMaxOffline;
 use super::super::mpc_party::*;
-
-pub fn batch_eval_of_idpf(idpf: &IDPFKey<RingElm>, old_state: &EvalState, x_batch: &[bool], batch_size: usize) ->(EvalState, RingElm){
-    let mut cur_state: EvalState = old_state.clone();
-    let mut y_idpf = RingElm::from(0);
-    for i in 0..batch_size{
-        let (new_state, y_eval) =  idpf.eval_bit(&cur_state, x_batch[i]);
-        cur_state = new_state;
-        y_idpf = y_eval;
-    }
-
-    (cur_state, y_idpf)
-}
+use super::tree_eval_of_idpf;
 
 //Assume n % batchsize == 0
 pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, batch_size: usize) ->Vec<bool>{
+    let num_threads = 32;
+    let pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
+    
     let m: usize = p.m;
     let n = p.n;
-    println!("m={}, n={}", m, n);
+    //println!("m={}, n={}", m, n);
     let is_server = p.netlayer.is_server;
 
     let every_batch_num = 1 << batch_size;
@@ -65,35 +60,51 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
     let t = p.netlayer.exchange_bool_vec(mask_bits.clone()).await; 
     /******************************************************  END: Line2-5: Reveal t = x^q^{\alpha} **************************************************/
     /***********************************************************************************************************************************************/
-    println!("q={:?}", p.offlinedata.base.qb_share);
+    //println!("q={:?}", p.offlinedata.base.qb_share);
     /***********************************************************************************************************************************************/
     /********************************************************  START: Line6-25: Compute vector V   *************************************************/
     for block_order in 0..block_num{ // for every block
         /*****************************************************************************************************************************/
         /********************************************************  START: Line6-14: Compute vector V   *******************************/
-        let mut V = Vec::<RingElm>::new();
-        let mut tmp_state = Vec::<Vec::<EvalState>>::new();
+        let mut V = Arc::new(Mutex::new(vec![RingElm::from(0); every_batch_num]));
+        let mut tmp_state = Arc::new(Mutex::new(Vec::<Vec::<EvalState>>::new()));
+
         for i in 0..m{
-            let tmp_state_i = Vec::<EvalState>::new();
-            //tmp_state_i.push(idpf_state[i].clone()); // initialize the j-th idpf's state 
-            tmp_state.push(tmp_state_i);
+            let tmp_state_i = Vec::<EvalState>::new(); 
+            tmp_state.lock().unwrap().push(tmp_state_i);
         }   //prepare for m state vectors, each of which contains  {\tao} state
 
         let index_start = block_order * batch_size;
         let index_end: usize = (block_order+1) * batch_size; //change them out from the loop
-        for i in 0..every_batch_num{ // for every \{tao} - j
-            let mut v_item = RingElm::from(0);
-            for j in 0..m{
-                let x_idpf = bits_Xor(&const_bdc_bits[i*batch_size..(i+1)*batch_size].to_vec(), &t[(j*n+index_start)..(j*n+index_end)].to_vec());//line8
-                //let (state_new, beta) = p.offlinedata.base.k_share[j].eval_bit(&old_state[j], &x_idpf[0..batch_size]);
+        pool.install(|| {
+            (0..m).into_par_iter().for_each(|j| {
+                let t_share = &t[(j*n+index_start)..(j*n+index_end)].to_vec();//line8
                 let old_state = idpf_state[j].clone(); // The initial state of the m-th idpf is idpf_state[i]
-                let (state_new, beta) = batch_eval_of_idpf(&p.offlinedata.base.k_share[j], &old_state, &x_idpf, batch_size);
-                tmp_state[j].push(state_new); //the j-th state for the k-th idpf
-                v_item.add(&beta);
-                //let (state, beta) = p.offlinedata.base.k_share[k].eval_bit(state, dir)
-            }
-            V.push(v_item);
-        }
+      
+                let tree_ind = 0;
+                let msk = true;      
+                let mut state_new_1 = Vec::<EvalState>::new();
+                let mut beta_1 = Vec::<RingElm>::new();
+                tree_eval_of_idpf(&p.offlinedata.base.k_share[j], &old_state, &t_share, batch_size, 
+                                                        tree_ind, msk, &mut state_new_1, &mut beta_1);
+
+                let tree_ind = 0;
+                let msk = false;      
+                let mut state_new_0 = Vec::<EvalState>::new();
+                let mut beta_0 = Vec::<RingElm>::new();
+                tree_eval_of_idpf(&p.offlinedata.base.k_share[j], &old_state, &t_share, batch_size, 
+                                                        tree_ind, msk, &mut state_new_0, &mut beta_0);
+                for i in 0..every_batch_num{
+                    if i < every_batch_num/2{
+                        tmp_state.lock().unwrap()[j].push(state_new_1[i].clone());
+                        V.lock().unwrap()[i].add(&beta_1[i]);
+                    } else{
+                        tmp_state.lock().unwrap()[j].push(state_new_0[i-every_batch_num/2].clone());
+                        V.lock().unwrap()[i].add(&beta_0[i-every_batch_num/2]);
+                    }
+                }
+            });
+        });
         /********************************************************  END  : Line6-14: Compute vector V   *******************************/
         /*****************************************************************************************************************************/
         
@@ -108,11 +119,11 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
             let M = &p.offlinedata.qmatrix_share[block_order];
             let mbs = &p.offlinedata.mbeavers[block_order].mbs;
             let mut it_bbeaver = p.offlinedata.binary_beavers.iter();
-            M.print();
+            //M.print();
             let mut x_f_nzc_share = Vec::<RingElm>::new();
             
             for i in 0..every_batch_num{
-                let mut x_item = V[i].clone();
+                let mut x_item = V.lock().unwrap()[i].clone();
                 x_item.add(&zc_a_share[i]);
                 x_f_nzc_share.push(x_item);
             } // Prepare exchange 2^batch ring;
@@ -138,7 +149,7 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
                 cmp.push(cmp_i);
             } //Line3-5, compute idpf-s
             /***********************************   END:   Line3-5 Compute idpf-s    **********************************/
-            println!("pre-ordered cmp[{}]={:?}", block_order, cmp);
+            //println!("pre-ordered cmp[{}]={:?}", block_order, cmp);
             /********************************   START:  Line2 order cmp  *********************************************/
 
             let mut exchange_msg_1 = Vec::<bool>::new();
@@ -175,7 +186,7 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
                     cmp[i] = cmp[i] ^ bool_product;
                 }
             } //finished test already
-            println!("ordered cmp[{}]={:?}", block_order, cmp);
+            //println!("ordered cmp[{}]={:?}", block_order, cmp);
             /******************************** END:    Line2 order cmp  *********************************************/
 
             /******************************** START:  Line11 Compute bt  *******************************************/
@@ -225,13 +236,13 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
                 }
             }
             /******************************** END:    Line14 Compute y_i  ******************************************/
-            println!("Pre-y[{}]={:?}", block_order, y);
+            //println!("Pre-y[{}]={:?}", block_order, y);
             let result = p.netlayer.exchange_bool_vec(y).await;
             result
         };       
         /********************************************************  END:   F_BatchMax Line15  *****************************************/
         /*****************************************************************************************************************************/
-        println!("Reveal-y[{}]={:?}", block_order, f_batch_max);
+        //println!("Reveal-y[{}]={:?}", block_order, f_batch_max);
         let mut path_eval = 0; // define which path is used
         for i in 0..batch_size{
             path_eval = path_eval << 1;
@@ -239,9 +250,9 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
                 path_eval += 1;
             }
         }  //line 17: rebuild the numerical max num
-        println!("path_eval={}", path_eval);
+        //println!("path_eval={}", path_eval);
         for i in 0..m{
-            idpf_state[i] = tmp_state[i][every_batch_num-path_eval-1].clone();  //update 0819: a big bug fixed here
+            idpf_state[i] = tmp_state.lock().unwrap()[i][every_batch_num-path_eval-1].clone();  //update 0819: a big bug fixed here
         } // Line18-20: update the idpf-s
 
         if is_server{ //Here, I fixed a big bug, update:0819

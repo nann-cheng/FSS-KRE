@@ -1,10 +1,10 @@
 use libmpc::mpc_party::MPCParty;
 use libmpc::protocols::bitwise_kre::*;
-use libmpc::protocols::batch_kre_proto::*;
+use libmpc::protocols::batch_max_proto::*;
 use libmpc::mpc_platform::NetInterface;
 use libmpc::offline_data::*;
 use fss::{prg::*, RingElm};
-use libmpc::offline_data::offline_batch_kre::*;
+use libmpc::offline_data::offline_batch_max::*;
 use std::fs::File;
 use std::io::Write;
 use std::env;
@@ -16,11 +16,11 @@ pub const TEST_BATCH_KRE: bool = false;
 // pub const TEST_SIMULATE_NETWORK: bool = false;
 // pub const TEST_REAL_NETWORK: bool = false;
 
-const INPUT_SIZE: usize = 1000usize;
+const INPUT_SIZE: usize = 10000usize;
 const INPUT_BITS: usize = 32usize;
-const BATCH_SIZE: usize = 8usize;
+const BATCH_SIZE: usize = 4usize;
 
-const K_GLOBAL: u32 = 10;
+const K_GLOBAL: u32 = 1;
 
 #[tokio::main]
 async fn main() {
@@ -58,40 +58,40 @@ async fn main() {
 
     // let mut offlinedata = BitMaxOffline::new(if is_server{0u8} else {1u8});
     //let mut offlinedata: BitKreOffline = BitKreOffline::new();
-    let mut offlinedata = BatchKreOffline::new();
+    let mut offlinedata = BatchMaxOffline::new();
     offlinedata.loadData(if is_server{&0u8} else {&1u8});
 
     //let mut p: MPCParty<BitKreOffline> = MPCParty::new(offlinedata, netlayer);
-    let mut p: MPCParty<BatchKreOffline> = MPCParty::<BatchKreOffline>::new(offlinedata, netlayer);
+    let mut p: MPCParty<BatchMaxOffline> = MPCParty::<BatchMaxOffline>::new(offlinedata, netlayer);
     p.setup(INPUT_SIZE, INPUT_BITS);
 
     // let result = bitwise_max(&mut p, &x_share).await;
     //let kValue = RingElm::from(if is_server{0u32} else {2u32});
-    let kValue = RingElm::from(if is_server{0u32} else {K_GLOBAL});
+    //let kValue = RingElm::from(if is_server{0u32} else {K_GLOBAL});
     //let result = bitwise_kre(&mut p, &x_share, &kValue).await;
-    let result = batch_kre(&mut p, &x_share, BATCH_SIZE, &kValue).await;
-    for i in 0..INPUT_SIZE{
-        print!("x_share[{}]=", i);
-        for j in 0..INPUT_BITS{
-            if x_share[i*INPUT_BITS+j] == true{
-                print!("1");
-            }
-            else {
-                print!("0");
-            }
-        }
-        println!("");
-    }
-    print!("cmp_share =");       
-    for i in 0..result.len(){           
-        if result[i] == true{
-            print!("1");
-        }
-        else {
-            print!("0");
-        }
-    }
-    println!(" ");
+    let result = batch_max(&mut p, &x_share, BATCH_SIZE).await;
+    // for i in 0..INPUT_SIZE{
+    //     print!("x_share[{}]=", i);
+    //     for j in 0..INPUT_BITS{
+    //         if x_share[i*INPUT_BITS+j] == true{
+    //             print!("1");
+    //         }
+    //         else {
+    //             print!("0");
+    //         }
+    //     }
+    //     println!("");
+    // }
+    // print!("cmp_share =");       
+    // for i in 0..result.len(){           
+    //     if result[i] == true{
+    //         print!("1");
+    //     }
+    //     else {
+    //         print!("0");
+    //     }
+    // }
+    // println!(" ");
     let mut f_x = File::create(format!( "../test/x{}.bin", &index)).expect("create failed");
     let mut f_cmp = File::create(format!( "../test/cmp{}.bin", &index)).expect("create failed");
     f_x.write_all(&bincode::serialize(&x_share).expect("Serialize x-bool-share error")).expect("Write x-bool-share error.");
@@ -107,7 +107,7 @@ mod test
     use fss::{ RingElm, Group};
     use std::io::Read;
     use libmpc::offline_data::*;
-    use libmpc::offline_data::offline_batch_kre::*;
+    use libmpc::offline_data::offline_batch_max::*;
     use libmpc::offline_data::offline_bitwise_kre::*;
     use fss::prg::*;
     use crate::{INPUT_SIZE,INPUT_BITS,K_GLOBAL,BATCH_SIZE};
@@ -198,8 +198,8 @@ mod test
         let input_bits = INPUT_BITS;
         let batch_size = BATCH_SIZE;
         let every_batch_num = 1 << batch_size;
-        let offline = BatchKreOffline::new();
-        offline.genData(&PrgSeed::zero(), input_size, input_bits, batch_size);
+        let offline = BatchMaxOffline::new();
+        offline.genData(&PrgSeed::zero(), input_size, input_bits, batch_size, every_batch_num * every_batch_num);
     }
 
 }
