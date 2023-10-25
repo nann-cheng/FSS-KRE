@@ -19,6 +19,8 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
     
     let m: usize = p.m;
     let n = p.n;
+
+
     //println!("m={}, n={}", m, n);
     let is_server = p.netlayer.is_server;
 
@@ -36,6 +38,8 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
     /******************************************************  END:   Line8 Comute \tao F_{BDC} i in 0..{\tao} ***************************************/
     /***********************************************************************************************************************************************/
     
+
+
     /***********************************************************************************************************************************************/
     /******************************************************  START: Line2-5: Reveal t = x^q^{\alpha}  **********************************************/
     let mut mask_bits = Vec::<bool>::new();//t in the paper, it is a bit vector of length n
@@ -60,7 +64,7 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
     let t = p.netlayer.exchange_bool_vec(mask_bits.clone()).await; 
     /******************************************************  END: Line2-5: Reveal t = x^q^{\alpha} **************************************************/
     /***********************************************************************************************************************************************/
-    //println!("q={:?}", p.offlinedata.base.qb_share);
+    // println!("q={:?}", p.offlinedata.base.qb_share);
     /***********************************************************************************************************************************************/
     /********************************************************  START: Line6-25: Compute vector V   *************************************************/
     for block_order in 0..block_num{ // for every block
@@ -262,12 +266,14 @@ pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, ba
         }
         else{
             for i in 0..batch_size{
-                cmp_bits[i+block_order*batch_size] = p.offlinedata.base.qb_share[i+block_order*batch_size]; // A big change here, last version forgot xor the q_share 
+                cmp_bits[i+block_order*batch_size] = p.offlinedata.base.qb_share[i+block_order*batch_size]; // A big change here, last version forgot xor the q_share
             }
         }
     }
      /********************************************************  END:   Line6-25*****************   *************************************************/
-    /***********************************************************************************************************************************************/  
+    /***********************************************************************************************************************************************/
+
+    p.netlayer.print_benchmarking().await;
     cmp_bits     
 }
 

@@ -1,16 +1,16 @@
 # MPC
-This project is to perform secure computation for the maximum/k^{th} ranking element from a secret set.
+This project is to perform secure computation for the maximum/k^{th} ranked element from a secret set where each element is submitted as an Boolean SS.
 
 The are a few directories in the solution:
   - data: store the generated offline data
   - test: store auto-generated binary files for test purpose
-  - libfss: implmentation for those fss primitives 
-  - offline: assisting in generating offline data used for online 2PC
+  - libfss: implmentation for used fss primitives, including dpf, idpf, and ic (interval containment) gate.
+  - offline: assisting in generating offline data used for online 2PC computation.
   - frontend: A frontend for bencharmking all basic protocols in libmpc.
 
 To generate offline data (for batch_max), Open one terminal:
     - cd frontend
-    - cargo test batch_max_gen_offlinedata
+    - cargo test gen_offlinedata
 
 Open two terminals
     - cd frontend

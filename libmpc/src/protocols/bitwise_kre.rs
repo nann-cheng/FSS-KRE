@@ -38,7 +38,7 @@ pub async fn bitwise_kre(p: &mut MPCParty<BitKreOffline>, x_bits: &Vec<bool>, kV
     for i in 0..n{
         // println!("***************start the {} iteration***************", i);
         let mut mu_share: RingElm = RingElm::zero();
-        println!("qb[{}]={}", i, p.offlinedata.base.qb_share[i]);
+        // println!("qb[{}]={}", i, p.offlinedata.base.qb_share[i]);
         let mut mu_share = Arc::new(Mutex::new(RingElm::zero()));
         (0..m).into_par_iter().for_each(|j| {
             let new_bit = t[j*n+i]; //x[j][i]
@@ -132,5 +132,6 @@ pub async fn bitwise_kre(p: &mut MPCParty<BitKreOffline>, x_bits: &Vec<bool>, kV
         old_state = new_state.lock().unwrap().clone(); //update the state
         // println!("***************end the {} iteration***************", i);
     }
+    p.netlayer.print_benchmarking().await;
     cmp_bits     
 }

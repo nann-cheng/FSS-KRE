@@ -9,12 +9,17 @@ use tokio::{
 use fss::RingElm;
 use fss::Group;
 //use async_trait::async_trait;
+use std::time::Instant;
+use std::time::Duration;
 
 pub struct NetInterface{
     //pub listener: TcpListener,
     pub is_server: bool,
     pub reader: OwnedReadHalf,
-    pub writer: OwnedWriteHalf
+    pub writer: OwnedWriteHalf,
+    pub received:usize,
+    pub rounds_occured:u32,
+    pub timer:Instant
 }
 
 impl NetInterface{
@@ -29,7 +34,10 @@ impl NetInterface{
             NetInterface{
                 is_server: true,
                 reader: r,
-                writer: w
+                writer: w,
+                received:  0usize,
+                rounds_occured:  0u32,
+                timer: Instant::now()
             }
         }
         else{
@@ -39,9 +47,22 @@ impl NetInterface{
             NetInterface{
                 is_server: false,
                 reader: r,
-                writer: w
+                writer: w,
+                received:  0usize,
+                rounds_occured:  0u32,
+                timer: Instant::now()
             }
         }
+    }
+    
+    pub async fn reset_timer(&mut self){
+        self.timer = Instant::now();
+    }
+
+    pub async fn print_benchmarking(&mut self){
+        // println!("Online rounds:{:?}",self.rounds_occured);
+        println!("Communication volume:{:?}",self.received);
+        println!("Computation time:{:?}",self.timer.elapsed());
     }
 
     pub async fn exchange_a_bool(&mut self, msg: bool)->bool{
@@ -74,14 +95,19 @@ impl NetInterface{
                 std::process::exit(-1);
             }  
             Ok(n) => {
+                self.received+=xmsg_len;
                 assert_eq!(n, xmsg_len);
                 // println!("Receive {} bytes from partner.", n);
             }        
-        }     
+        }
+
+        self.rounds_occured+=1;
+
         let mut r = msg; //save the msg
         if buf[0] == 1{
             r = !r;
         }
+
         r
     }
 
@@ -108,10 +134,13 @@ impl NetInterface{
                 std::process::exit(-1);
             }  
             Ok(n) => {
+                self.received+=xmsg_len;
                 assert_eq!(n, xmsg_len);
                 // println!("Receive {} bytes from partner.", n);
             }        
-        }     
+        }
+        self.rounds_occured+=1;
+
         let mut r = msg; //save the msg
         for i in 0..xmsg_len{
             if buf[i] == 1{
@@ -148,10 +177,12 @@ impl NetInterface{
                 std::process::exit(-1);
             }     
             Ok(n) => {
+                self.received+=xmsg_len;
                 assert_eq!(n, xmsg_len);
                 // println!("Receive {} bytes from partner.", n);
             }        
         }
+        self.rounds_occured+=1;
 
         let mut r: Vec<RingElm> = msg;
         for i in 0..xmsg_len/4{
@@ -167,7 +198,7 @@ impl NetInterface{
 
     pub async fn exchange_byte_vec(&mut self, msg: &Vec<u8>) -> Vec<u8>{
         let msg_len = msg.len();
-        
+
         let mut buf: Vec<u8> = vec![0; msg_len];
         if let Err(err) = self.writer.write_all(&msg.as_slice()).await{
             eprintln!("Write to partner failed:{}", err);
@@ -187,10 +218,13 @@ impl NetInterface{
                 std::process::exit(-1);
             }     
             Ok(n) => {
+                self.received+=msg_len;
                 assert_eq!(n, msg_len);
                 // println!("Receive {} bytes from partner.", n);
             }        
         }
+        self.rounds_occured +=1;
+
         buf   
     }
 

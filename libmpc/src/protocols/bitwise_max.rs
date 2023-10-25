@@ -27,9 +27,10 @@ pub async fn bitwise_max(p: &mut MPCParty<BitMaxOffline>, x_bits: &Vec<bool>)->V
             mask_bits.push(t_share);
         }
     }
-   
+
     /*Line 3: The reveal function for a bunch of bool data*/ 
-    let t = p.netlayer.exchange_bool_vec(mask_bits.clone()).await; 
+    let t = p.netlayer.exchange_bool_vec(mask_bits.clone()).await;
+
     /*Line5-6: v is the number of elements whose prefix is p_{i-1} */
     let mut v_share= RingElm::zero();
     let mut one_share= RingElm::zero();
@@ -43,15 +44,17 @@ pub async fn bitwise_max(p: &mut MPCParty<BitMaxOffline>, x_bits: &Vec<bool>)->V
         one_share.sub(&p.offlinedata.base.qa_share[0]);
         one_share.mul(&ring_m);
         one_share   
-    }; // Line6
+    };//Line6
+
     println!("v = {}, omega = {}", v_share.to_u32().unwrap(), omega_share.to_u32().unwrap());
     let beavers = &mut p.offlinedata.base.beavers;
     let mut beavers_ctr = 0;
     
+
     //Online-step-3. Start bit-by-bit prefix query, from Line7
     for i in 0..n{
         // println!("***************start the {} iteration***************", i);
-        println!("qb[{}]={}", i, p.offlinedata.base.qb_share[i]);
+        // println!("qb[{}]={}", i, p.offlinedata.base.qb_share[i]);
         let mut mu_share = Arc::new(Mutex::new(RingElm::zero()));
         (0..m).into_par_iter().for_each(|j| {
             let new_bit = t[j*n+i]; //x[j][i]
@@ -61,13 +64,13 @@ pub async fn bitwise_max(p: &mut MPCParty<BitMaxOffline>, x_bits: &Vec<bool>)->V
         });
 
         /*mu is the number of elements having the prefix p_{i-1} || q[i] */
-        println!("mu={:?}", mu_share);
+        // println!("mu={:?}", mu_share);
 
         let v0_share = mu_share.lock().unwrap().clone(); //Line 13, the number of elements having the prerix p_{i-1} || q[i]
         let mut v1_share = v_share.clone();
         v1_share.sub(&mu_share.lock().unwrap()); // Line 14, the number of elements having prefix p_{i-1} || ~q[i]
         let v_share_t = (v0_share.clone(), v1_share.clone());
-        println!("v0={:?}, v1={:?}", v0_share, v1_share);
+        // println!("v0={:?}, v1={:?}", v0_share, v1_share);
         
         /*Exchange five ring_elements in parallel: u_i-w_i-alpha[i], (d_share, e_share) tuples for the two multiplication operation */
         let mut msg0  = Vec::<RingElm>::new();        // the send message
@@ -75,7 +78,7 @@ pub async fn bitwise_max(p: &mut MPCParty<BitMaxOffline>, x_bits: &Vec<bool>)->V
         x_fnzc_share.add(&mu_share.lock().unwrap());
         x_fnzc_share.sub(&omega_share); //compute u_i-w_i, the x value of f_{NonZeroCheck}
         x_fnzc_share.add(&p.offlinedata.zc_a_share[i]); //mask the x value by alpha 
-        println!("{:?} x_fznc_share={:?}",i, x_fnzc_share);
+        // println!("{:?} x_fznc_share={:?}",i, x_fnzc_share);
         msg0.push(x_fnzc_share);
         let rv = p.netlayer.exchange_ring_vec(msg0.clone()).await;
         let x_fznc = rv[0].clone();
@@ -102,7 +105,7 @@ pub async fn bitwise_max(p: &mut MPCParty<BitMaxOffline>, x_bits: &Vec<bool>)->V
             let omega1 = beavers[beavers_ctr+1].beaver_mul1(is_server, &otherMsg1[8..16].to_vec());
             beavers_ctr += 2;
 
-            println!("wo={:?}, w1={:?}", omega0, omega1);
+            // println!("wo={:?}, w1={:?}", omega0, omega1);
             omega_t = (omega0, omega1);
         }
         else{
@@ -117,10 +120,10 @@ pub async fn bitwise_max(p: &mut MPCParty<BitMaxOffline>, x_bits: &Vec<bool>)->V
             None      => println!( "u32 Conversion failed!!" ),
         }
 
-        println!("{:?} x_fznc={:?}",i, x_fznc);
-        println!("{:?} vec_eval={:?}",i, vec_eval);
+        // println!("{:?} x_fznc={:?}",i, x_fznc);
+        // println!("{:?} vec_eval={:?}",i, vec_eval);
         let y_fnzc: BinElm = p.offlinedata.zc_k_share[i].eval(&vec_eval);
-        println!("y_fnzc={:?}", y_fnzc);
+        // println!("y_fnzc={:?}", y_fnzc);
         cmp_bits[i] = y_fnzc.to_Bool();
         if is_server{
             cmp_bits[i] = !cmp_bits[i]
@@ -133,7 +136,7 @@ pub async fn bitwise_max(p: &mut MPCParty<BitMaxOffline>, x_bits: &Vec<bool>)->V
         let simga_share = cmp_bits[i] ^ p.offlinedata.base.qb_share[i];
         let sigma = p.netlayer.exchange_a_bool(simga_share).await;
         // println!("End Reveal sigma {}", i);
-        println!("sigma_{}={}", i, sigma);
+        // println!("sigma_{}={}", i, sigma);
         /*Line 20-21 */
         if sigma {
             v_share = v_share_t.1;
@@ -155,6 +158,8 @@ pub async fn bitwise_max(p: &mut MPCParty<BitMaxOffline>, x_bits: &Vec<bool>)->V
         old_state = new_state.lock().unwrap().clone(); //update the state
         // println!("***************end the {} iteration***************", i);
     
-    }        
+    }
+    p.netlayer.print_benchmarking().await;
+
     cmp_bits     
 }
