@@ -162,8 +162,8 @@ impl NetInterface{
             std::process::exit(-1);
         }
         else{
-            // println!("Write to partner {} bytes.", xmsg_len);
-        } // send message to the partner
+          //println!("Write to partner {} bytes.", xmsg_len);
+        } //send message to the partner
 
         match  self.reader.read_exact(&mut buf[0..xmsg_len]).await{
             Err(e) => {
