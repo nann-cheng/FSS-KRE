@@ -36,7 +36,7 @@ pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::BITWISE_MAX;
 pub const TEST_WAN_NETWORK: bool = true;
 
 //m: set size
-const INPUT_SIZE: usize = 100000usize;
+const INPUT_SIZE: usize = 1000000usize;
 //n: input domain length
 const INPUT_BITS: usize = 15usize;
 
