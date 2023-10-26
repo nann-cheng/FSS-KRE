@@ -10,7 +10,7 @@ The are a few directories in the solution:
 
 To generate offline data (for batch_max), Open one terminal:
     - cd frontend
-    - cargo test gen_offlinedata
+    - cargo test gen_offlinedata -- --nocapture (-- --nocapture is used to diplay standard I/O)
 
 Open two terminals
     - cd frontend
