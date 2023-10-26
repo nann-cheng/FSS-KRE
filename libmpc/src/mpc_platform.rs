@@ -112,7 +112,48 @@ impl NetInterface{
     }
 
     pub async fn exchange_bool_vec(&mut self, msg: Vec<bool>)->Vec<bool>{
-        let x_msg: Vec<u8> = msg.clone().iter().map(|x| if *x == true {1} else {0}).collect(); // convert the bool vec to u8 vec such that the message can be convoyed in the channel
+        // let x_msg: Vec<u8> = msg.clone().iter().map(|x| if *x == true {1} else {0}).collect(); // convert the bool vec to u8 vec such that the message can be convoyed in the channel.
+         fn bool_vec_to_u8_vec(bool_vec: &[bool]) -> Vec<u8> {
+            let mut u8_vec = vec![];
+            let mut accumulator = 0u8;
+            let mut bit_index = 0;
+
+            for &b in bool_vec {
+                if b {
+                    accumulator |= 1 << bit_index;
+                }
+                bit_index += 1;
+
+                if bit_index >= 8 {
+                    u8_vec.push(accumulator);
+                    accumulator = 0;
+                    bit_index = 0;
+                }
+            }
+
+            // Push the remaining accumulator value if there are any "left-over" bits
+            if bit_index > 0 {
+                u8_vec.push(accumulator);
+            }
+
+            u8_vec
+        }
+
+        fn u8_vec_to_bool_vec(u8_vec: &[u8], original_length: usize) -> Vec<bool> {
+            let mut bool_vec = Vec::with_capacity(original_length);
+            for &byte in u8_vec {
+                for bit_index in 0..8 {
+                    if bool_vec.len() == original_length {
+                        break;
+                    }
+                    let mask = 1 << bit_index;
+                    bool_vec.push(byte & mask != 0);
+                }
+            }
+            bool_vec
+        }
+
+        let x_msg = bool_vec_to_u8_vec(&msg);
         let xmsg_len = x_msg.len();
         let mut buf: Vec<u8> = vec![0; xmsg_len];
 
@@ -139,15 +180,19 @@ impl NetInterface{
                 // println!("Receive {} bytes from partner.", n);
             }        
         }
+
+
         self.rounds_occured+=1;
 
-        let mut r = msg; //save the msg
-        for i in 0..xmsg_len{
-            if buf[i] == 1{
-                r[i] = !r[i];
-            }
-        }
-        r
+        let decoded_bool_vec = u8_vec_to_bool_vec(&buf, msg.len());
+
+        // let mut r = msg; //save the msg
+        // for i in 0..xmsg_len{
+        //     if buf[i] == 1{
+        //         r[i] = !r[i];
+        //     }
+        // }
+        decoded_bool_vec
     }
 
     pub async fn exchange_ring_vec(&mut self, msg: Vec<RingElm>) -> Vec<RingElm>{

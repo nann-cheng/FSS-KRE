@@ -33,7 +33,7 @@ pub enum TEST_OPTIONS{
 }
 
 pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::BITWISE_MAX;
-pub const TEST_WAN_NETWORK: bool = true;
+pub const TEST_WAN_NETWORK: bool = false;
 
 //m: set size
 const INPUT_SIZE: usize = 100000usize;
