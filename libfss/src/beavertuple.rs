@@ -1,7 +1,6 @@
 use crate::prg::PrgSeed;
 use crate::prg::FixedKeyPrgStream;
 use crate::bits_to_u32;
-
 use crate::{ring, Group};
 
 use super::RingElm;
@@ -110,8 +109,70 @@ impl BeaverTuple{
         result
     }
 
+    pub fn mul_open(&mut self, alpha: RingElm, beta: RingElm) -> (RingElm, RingElm){
+        self.delta_a = alpha - self.a;
+        self.delta_b = beta - self.b;
+        (self.delta_a, self.delta_b)
+    }
+
+    pub fn mul_compute(&mut self, is_server: bool, alpha: &RingElm, beta: &RingElm) -> RingElm{
+        self.delta_a = alpha.clone();
+        self.delta_b = beta.clone();
+        let mut result= RingElm::zero();
+        if is_server{
+            result.add(&(self.delta_a*self.delta_b) );
+        }
+        result.add(&(self.delta_a*self.b) );
+        result.add(&(self.delta_b*self.a) );
+        result.add(& self.ab);
+        result
+    }
+
 }
 
+
+#[cfg(test)]
+mod test{
+    use crate::{beavertuple::*, RingElm};
+
+    #[test]
+    fn test_beaver_mul(){
+        let a0 = RingElm::from(3);
+        let a1 = RingElm::from(2);
+        let b0 = RingElm::from(2);
+        let b1 = RingElm::from(6);
+        let c0 = RingElm::from(17);
+        let c1 = RingElm::from(23);
+
+        let alpha0 = RingElm::from(23);
+        let alpha1 = RingElm::from(17);
+
+        let beta0 = RingElm::from(14);
+        let beta1 = RingElm::from(16);
+        let mut beaver0 = BeaverTuple::new(a0, b0, c0);
+        let mut beaver1 = BeaverTuple::new(a1, b1, c1);
+
+        let msg0 = beaver0.mul_open(alpha0, beta0);
+        //let msg0 = beaver0.beaver_mul0(alpha0, beta0);
+
+        let msg1 = beaver1.mul_open(alpha1, beta1);
+        //let msg1 = beaver1.beaver_mul0(alpha1, beta1);
+        //println!("msg0 = {:?}", msg0);
+        //println!("msg1 = {:?}", msg1);
+        let msg = (msg0.0 + msg1.0, msg0.1 + msg1.1);
+        //println!("msg1 = {:?}", msg);
+        
+        //let r0 = beaver0.mul_compute(false, msg.0, msg.1);
+        let r0 = beaver0.mul_compute(false, &msg.0, &msg.1);
+        let r1 = beaver1.mul_compute(true, &msg.0, &msg.1);
+
+        println!("{:?}", r0);
+        println!("{:?}", r1);
+        let r_real = (alpha0 + alpha1) * (beta0 + beta1);
+        assert_eq!(r0 + r1, r_real);
+        //assert_eq!(r1, r_real);
+    }
+}
 
 // /*The multiplication of [alpha] x [beta], the values of beaver_share are [a], [b], and [ab], d and e are the reconstructed values of alpha-a, beta-b*/
 // fn beaver_mul(is_server: bool, beaver_share: &BeaverTuple, d: &RingElm, e: &RingElm) -> RingElm{

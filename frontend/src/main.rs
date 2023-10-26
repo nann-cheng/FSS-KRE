@@ -3,6 +3,7 @@ use libmpc::protocols::bitwise_max::*;
 use libmpc::protocols::bitwise_kre::*;
 use libmpc::protocols::batch_max_proto::*;
 use libmpc::protocols::batch_kre_proto::*;
+use libmpc::protocols::max_ic_proto::*;
 use libmpc::mpc_platform::NetInterface;
 use libmpc::offline_data::*;
 use fss::{prg::*, RingElm};
@@ -10,18 +11,24 @@ use libmpc::offline_data::offline_bitwise_max::*;
 use libmpc::offline_data::offline_bitwise_kre::*;
 use libmpc::offline_data::offline_batch_max::*;
 use libmpc::offline_data::offline_batch_kre::*;
+use libmpc::offline_data::offline_ic_max::*;
+
 use std::fs::File;
 use std::io::Write;
 use std::env;
+use rand::Rng;
 
+#[derive(PartialEq,PartialOrd)]
 pub enum TEST_OPTIONS{
-    BITWISE_MAX,
-    BATCH_MAX,
-    BITWISE_KRE,
-    BATCH_KRE
+    BITWISE_MAX = 1,
+    BATCH_MAX= 2,
+    BITWISE_KRE= 3,
+    BATCH_KRE= 4,
+    TRIVAL_FSS_MAX= 5,
+    TRIVAL_FSS_KRE= 6
 }
 
-pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::BITWISE_KRE;
+pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::TRIVAL_FSS_MAX;
 // pub const TEST_SIMULATE_NETWORK: bool = false;
 // pub const TEST_REAL_NETWORK: bool = false;
 
@@ -71,8 +78,9 @@ async fn main() {
     let mut result = vec![false;INPUT_BITS];
 
     let mut netlayer = NetInterface::new(is_server, "127.0.0.1:8088").await;
-    match M_TEST_CHOICE{
-            TEST_OPTIONS::BITWISE_MAX => {
+
+    if M_TEST_CHOICE<=TEST_OPTIONS::BATCH_KRE{
+        if M_TEST_CHOICE == TEST_OPTIONS::BITWISE_MAX{
 
                 let mut offlinedata = BitMaxOffline::new();
                 offlinedata.loadData(&index_ID);
@@ -80,36 +88,59 @@ async fn main() {
                 let mut p: MPCParty<BitMaxOffline> = MPCParty::new(offlinedata, netlayer);
                 p.setup(INPUT_SIZE, INPUT_BITS);
                 result = bitwise_max(&mut p, &x_share).await;
-            },
-            TEST_OPTIONS::BATCH_MAX => {
-
-                let mut offlinedata = BatchMaxOffline::new();
+        }else if M_TEST_CHOICE == TEST_OPTIONS::BATCH_MAX{
+            let mut offlinedata = BatchMaxOffline::new();
                 offlinedata.loadData(&index_ID);
                 netlayer.reset_timer().await;
                 let mut p: MPCParty<BatchMaxOffline> = MPCParty::new(offlinedata, netlayer);
                 p.setup(INPUT_SIZE, INPUT_BITS);
                 result = batch_max(&mut p, &x_share, BATCH_SIZE).await;
-            },
-            TEST_OPTIONS::BITWISE_KRE => {
+        }else if M_TEST_CHOICE == TEST_OPTIONS::BITWISE_KRE{
                 let mut offlinedata: BitKreOffline = BitKreOffline::new();
                 offlinedata.loadData(&index_ID);
                 netlayer.reset_timer().await;
                 let mut p: MPCParty<BitKreOffline> = MPCParty::new(offlinedata, netlayer);
                 p.setup(INPUT_SIZE, INPUT_BITS);
 
-                let kValue = RingElm::from(if is_server{0u32} else {2u32});
                 let kValue = RingElm::from(if is_server{0u32} else {K_GLOBAL});
                 result = bitwise_kre(&mut p, &x_share, &kValue).await;
-            },
-            TEST_OPTIONS::BATCH_KRE => {
-                let every_batch_num = 1 << BATCH_SIZE;
-                let mut offline = BatchMaxOffline::new();
-                offline.genData(&PrgSeed::zero(), INPUT_SIZE, INPUT_BITS, BATCH_SIZE, every_batch_num * every_batch_num);
-            },
+        }else if M_TEST_CHOICE == TEST_OPTIONS::BATCH_KRE{
+            let mut offlinedata = BatchKreOffline::new();
+            offlinedata.loadData(&index_ID);
+            netlayer.reset_timer().await;
+            let mut p: MPCParty<BatchKreOffline> = MPCParty::new(offlinedata, netlayer);
+            p.setup(INPUT_SIZE, INPUT_BITS);
+            let kValue = RingElm::from(if is_server{0u32} else {K_GLOBAL});
+            result = batch_kre(&mut p, &x_share, BATCH_SIZE,&kValue).await;
         }
-
         let mut f_cmp = File::create(format!( "../test/cmp{}.bin", &index)).expect("create failed");
         f_cmp.write_all(&bincode::serialize(&result).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
+    }else{
+        if M_TEST_CHOICE == TEST_OPTIONS::TRIVAL_FSS_MAX{
+                let mut rng = rand::thread_rng();
+                let mut xx_share = Vec::<RingElm>::new();
+                for i in 0..INPUT_SIZE{
+                    let r = rng.gen_range(1..50) as u32;
+                    xx_share.push(RingElm::from(r));
+                }
+                let mut offlinedata = MaxOffline_IC::new();
+                offlinedata.loadData(&index_ID, false); // if max, false
+                netlayer.reset_timer().await;
+                let mut p = MPCParty::<MaxOffline_IC>::new(offlinedata, netlayer);
+                p.setup(INPUT_SIZE, INPUT_BITS);
+                let mut ringele_result = max_ic(&mut p, &xx_share).await;
+        }
+        else if M_TEST_CHOICE == TEST_OPTIONS::TRIVAL_FSS_KRE{
+            // let mut offlinedata = MaxOffline_IC::new();
+            // offlinedata.loadData(&index_ID, true); // if kmax, true
+            // netlayer.reset_timer().await;
+            // let mut p = MPCParty::<MaxOffline_IC>::new(offlinedata, netlayer);
+            // p.setup(INPUT_SIZE, INPUT_BITS);
+            // let kValue = RingElm::from(if is_server{0u32} else {K_GLOBAL});
+            // heap_sort(&mut p, &mut x_share).await;
+            // result = extract_kmax(&mut p, &x_share, kValue).await;
+        }
+    }
 }
 
 #[cfg(test)]
@@ -123,7 +154,8 @@ mod test
     use libmpc::offline_data::offline_bitwise_max::*;
     use libmpc::offline_data::offline_bitwise_kre::*;
     use libmpc::offline_data::offline_batch_max::*;
-    use libmpc::offline_data::offline_bitwise_kre::*;
+    use libmpc::offline_data::offline_batch_kre::*;
+    use libmpc::offline_data::offline_ic_max::MaxOffline_IC;
     use fss::prg::*;
     use crate::{INPUT_SIZE,INPUT_BITS,K_GLOBAL,BATCH_SIZE,M_TEST_CHOICE};
     use std::slice;
@@ -146,9 +178,18 @@ mod test
                 offline.genData(&PrgSeed::zero(), INPUT_SIZE, INPUT_BITS);
             },
             TEST_OPTIONS::BATCH_KRE => {
-                let every_batch_num = 1 << BATCH_SIZE;
-                let offline = BatchMaxOffline::new();
-                offline.genData(&PrgSeed::zero(), INPUT_SIZE, INPUT_BITS, BATCH_SIZE, every_batch_num * every_batch_num);
+                let offline = BatchKreOffline::new();
+                offline.genData(&PrgSeed::zero(), INPUT_SIZE, INPUT_BITS, BATCH_SIZE);
+            },
+            TEST_OPTIONS::TRIVAL_FSS_MAX => {
+                let seed = PrgSeed::zero();//Guarantee same input bits to ease the debug process
+                let mut stream = FixedKeyPrgStream::new();
+                stream.set_key(&seed.key);
+                MaxOffline_IC::genData(&mut stream, INPUT_SIZE*(INPUT_SIZE - 1) / 2 , INPUT_SIZE * (INPUT_SIZE-1) / 2 + 2 * INPUT_SIZE, INPUT_SIZE);
+            },
+            TEST_OPTIONS::TRIVAL_FSS_KRE => {
+                let offline = BatchKreOffline::new();
+                offline.genData(&PrgSeed::zero(), INPUT_SIZE, INPUT_BITS, BATCH_SIZE);
             },
         }
     }
@@ -313,6 +354,12 @@ mod test
                 kre_works();
             },
             TEST_OPTIONS::BATCH_KRE => {
+                kre_works();
+            },
+            TEST_OPTIONS::TRIVAL_FSS_MAX => {
+                max_works();
+            },
+            TEST_OPTIONS::TRIVAL_FSS_KRE => {
                 kre_works();
             },
         }

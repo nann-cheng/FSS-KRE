@@ -131,3 +131,4 @@ pub mod offline_bitwise_max;
 pub mod offline_bitwise_kre;
 pub mod offline_batch_max;
 pub mod offline_batch_kre;
+pub mod offline_ic_max;

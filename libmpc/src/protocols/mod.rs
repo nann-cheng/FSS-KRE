@@ -6,6 +6,7 @@ pub mod bitwise_max;
 pub mod bitwise_kre;
 pub mod batch_max_proto;
 pub mod batch_kre_proto;
+pub mod max_ic_proto;
 
 pub fn tree_eval_of_idpf(idpf: &IDPFKey<RingElm>, old_state: &EvalState, t_batch: &Vec<bool>, batch_size: usize, 
     tree_ind: usize, msk: bool, new_state: &mut Vec<EvalState>, beta: &mut Vec<RingElm>) {
