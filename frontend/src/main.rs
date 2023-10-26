@@ -17,7 +17,8 @@ use std::fs::File;
 use std::io::Write;
 use std::env;
 use rand::Rng;
-
+use std::time::Instant;
+use std::time::Duration;
 
 const LAN_ADDRESS: &'static str = "127.0.0.1:8088";
 const WAN_ADDRESS: &'static str = "149.28.35.104:8088";
@@ -33,11 +34,11 @@ pub enum TEST_OPTIONS{
     TRIVAL_FSS_KRE= 6
 }
 
-pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::TRIVAL_FSS_KRE;
+pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::BITWISE_MAX;
 pub const TEST_WAN_NETWORK: bool = false;
 
 //m: set size
-const INPUT_SIZE: usize = 10usize;
+const INPUT_SIZE: usize = 100usize;
 //n: input domain length
 const INPUT_BITS: usize = 30usize;
 
@@ -164,9 +165,12 @@ mod test
     use crate::{INPUT_SIZE,INPUT_BITS,K_GLOBAL,BATCH_SIZE,M_TEST_CHOICE};
     use std::slice;
     use crate::TEST_OPTIONS;
-    
+    use std::time::Instant;
+    use std::time::Duration;
+
     #[test]
     fn gen_offlinedata(){
+        let offline_timer = Instant::now();
         match M_TEST_CHOICE{
             TEST_OPTIONS::BITWISE_MAX => {
                 let offline = BitMaxOffline::new();
@@ -196,6 +200,7 @@ mod test
                 offline.genData(&PrgSeed::zero(), INPUT_SIZE, INPUT_BITS, BATCH_SIZE);
             },
         }
+        println!("Offline key generation time:{:?}",offline_timer.elapsed());
     }
 
     #[test]
