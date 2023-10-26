@@ -70,7 +70,7 @@ pub async fn bitwise_max(p: &mut MPCParty<BitMaxOffline>, x_bits: &Vec<bool>)->V
         let mut v1_share = v_share.clone();
         v1_share.sub(&mu_share.lock().unwrap()); // Line 14, the number of elements having prefix p_{i-1} || ~q[i]
         let v_share_t = (v0_share.clone(), v1_share.clone());
-        // println!("v0={:?}, v1={:?}", v0_share, v1_share);
+        println!("v0={:?}, v1={:?}", v0_share, v1_share);
         
         /*Exchange five ring_elements in parallel: u_i-w_i-alpha[i], (d_share, e_share) tuples for the two multiplication operation */
         let mut msg0  = Vec::<RingElm>::new();        // the send message

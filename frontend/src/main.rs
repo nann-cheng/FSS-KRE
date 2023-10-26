@@ -18,8 +18,6 @@ use std::io::Write;
 use std::env;
 use rand::Rng;
 
-
-
 const LAN_ADDRESS: &'static str = "127.0.0.1:8088";
 const WAN_ADDRESS: &'static str = "149.28.35.104:8088";
 
@@ -38,7 +36,7 @@ pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::BITWISE_MAX;
 pub const TEST_WAN_NETWORK: bool = true;
 
 //m: set size
-const INPUT_SIZE: usize = 100usize;
+const INPUT_SIZE: usize = 100000usize;
 //n: input domain length
 const INPUT_BITS: usize = 15usize;
 
