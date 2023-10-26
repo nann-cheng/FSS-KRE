@@ -160,40 +160,39 @@ impl NetInterface{
         println!("current x_msg len is: {:?}", xmsg_len);
 
         const MAX_MSG_SIZE:usize = 256000; //250KB
-        // if xmsg_len>MAX_MSG_SIZE{
-            let slices:usize = (xmsg_len+MAX_MSG_SIZE-1)/MAX_MSG_SIZE;
-            for i in 0..slices{
-                let start_index:usize = i*MAX_MSG_SIZE;
-                let end_index:usize = if i==slices-1{xmsg_len}else{(i+1)*MAX_MSG_SIZE };
-                let expect_buff_Size = end_index - start_index;
+        let slices:usize = (xmsg_len+MAX_MSG_SIZE-1)/MAX_MSG_SIZE;
+        
+        for i in 0..slices{
+            let start_index:usize = i*MAX_MSG_SIZE;
+            let end_index:usize = if i==slices-1{xmsg_len}else{(i+1)*MAX_MSG_SIZE };
+            let expect_buff_Size = end_index - start_index;
 
-                let cur_slice: &[u8] = &x_msg[start_index..end_index];
+            let cur_slice: &[u8] = &x_msg[start_index..end_index];
 
-                if let Err(err) = self.writer.write_all(&cur_slice).await{
-                    eprintln!("Write to partner failed:{}", err);
+            if let Err(err) = self.writer.write_all(&cur_slice).await{
+                eprintln!("Write to partner failed:{}", err);
+                std::process::exit(-1);
+            }
+            else{
+            //println!("Write to partner {} bytes.", xmsg_len);
+            } //send message to the partner
+
+            match  self.reader.read_exact(&mut buf[start_index..end_index]).await{
+                Err(e) => {
+                    eprintln!("read from client error: {}", e);
                     std::process::exit(-1);
                 }
-                else{
-                //println!("Write to partner {} bytes.", xmsg_len);
-                } //send message to the partner
-
-                match  self.reader.read_exact(&mut buf[start_index..end_index]).await{
-                    Err(e) => {
-                        eprintln!("read from client error: {}", e);
-                        std::process::exit(-1);
-                    }
-                    Ok(0) => {
-                        println!("client closed.");
-                        std::process::exit(-1);
-                    }  
-                    Ok(n) => {
-                        self.received += expect_buff_Size;
-                        assert_eq!(n, expect_buff_Size);
-                        // println!("Receive {} bytes from partner.", n);
-                    }        
-                }
+                Ok(0) => {
+                    println!("client closed.");
+                    std::process::exit(-1);
+                }  
+                Ok(n) => {
+                    self.received += expect_buff_Size;
+                    assert_eq!(n, expect_buff_Size);
+                    // println!("Receive {} bytes from partner.", n);
+                }        
             }
-        // }
+        }
 
         // if let Err(err) = self.writer.write_all(&x_msg.as_slice()).await{
         //     eprintln!("Write to partner failed:{}", err);
@@ -224,12 +223,6 @@ impl NetInterface{
 
         let decoded_bool_vec = u8_vec_to_bool_vec(&buf, msg.len());
 
-        // let mut r = msg; //save the msg
-        // for i in 0..xmsg_len{
-        //     if buf[i] == 1{
-        //         r[i] = !r[i];
-        //     }
-        // }
         decoded_bool_vec
     }
 
