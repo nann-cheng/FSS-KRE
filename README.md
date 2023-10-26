@@ -18,4 +18,3 @@ Open two terminals
     - In the 2nd terminal: cargo run 1
 
 The results are written in "test", in frontend repo then run "cargo test test_result" to verify the results.
-
