@@ -157,7 +157,7 @@ impl NetInterface{
         let xmsg_len = x_msg.len();
         let mut buf: Vec<u8> = vec![0; xmsg_len];
 
-        println!("current x_msg len is: ", x_msg.len());
+        println!("current x_msg len is: {:?}", xmsg_len);
 
         if let Err(err) = self.writer.write_all(&x_msg.as_slice()).await{
             eprintln!("Write to partner failed:{}", err);
