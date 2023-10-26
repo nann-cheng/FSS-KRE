@@ -5,7 +5,7 @@ use libmpc::protocols::batch_max_proto::*;
 use libmpc::protocols::batch_kre_proto::*;
 use libmpc::protocols::max_ic_proto::*;
 use libmpc::mpc_platform::NetInterface;
-use libmpc::offline_data::*;
+
 use fss::{prg::*, RingElm};
 use libmpc::offline_data::offline_bitwise_max::*;
 use libmpc::offline_data::offline_bitwise_kre::*;
@@ -17,8 +17,8 @@ use std::fs::File;
 use std::io::Write;
 use std::env;
 use rand::Rng;
-use std::time::Instant;
-use std::time::Duration;
+
+
 
 const LAN_ADDRESS: &'static str = "127.0.0.1:8088";
 const WAN_ADDRESS: &'static str = "149.28.35.104:8088";
@@ -123,7 +123,7 @@ async fn main() {
     }else{
         let mut rng = rand::thread_rng();
         let mut xx_share = Vec::<RingElm>::new();
-        for i in 0..INPUT_SIZE{
+        for _i in 0..INPUT_SIZE{
             let r = rng.gen_range(1..50) as u32;
             xx_share.push(RingElm::from(r));
         }
@@ -133,7 +133,7 @@ async fn main() {
                 netlayer.reset_timer().await;
                 let mut p = MPCParty::<MaxOffline_IC>::new(offlinedata, netlayer);
                 p.setup(INPUT_SIZE, INPUT_BITS);
-                let mut ringele_result = max_ic(&mut p, &xx_share).await;
+                let _ringele_result = max_ic(&mut p, &xx_share).await;
         }
         else if M_TEST_CHOICE == TEST_OPTIONS::TRIVAL_FSS_KRE{
             let mut offlinedata = MaxOffline_IC::new();
@@ -143,7 +143,7 @@ async fn main() {
             p.setup(INPUT_SIZE, INPUT_BITS);
             let kValue = RingElm::from(if is_server{0u32} else {K_GLOBAL});
             heap_sort(&mut p, &mut xx_share).await;
-            let mut ringele_result = extract_kmax(&mut p, &xx_share, kValue).await;
+            let _ringele_result = extract_kmax(&mut p, &xx_share, kValue).await;
         }
     }
 }
@@ -152,10 +152,10 @@ async fn main() {
 mod test
 {
     use std::fs::File;
-    use bincode::deserialize;
-    use fss::{ RingElm, Group};
+    
+    use fss::{ Group};
     use std::io::Read;
-    use libmpc::offline_data::*;
+    
     use libmpc::offline_data::offline_bitwise_max::*;
     use libmpc::offline_data::offline_bitwise_kre::*;
     use libmpc::offline_data::offline_batch_max::*;
@@ -163,10 +163,10 @@ mod test
     use libmpc::offline_data::offline_ic_max::MaxOffline_IC;
     use fss::prg::*;
     use crate::{INPUT_SIZE,INPUT_BITS,K_GLOBAL,BATCH_SIZE,M_TEST_CHOICE};
-    use std::slice;
+    
     use crate::TEST_OPTIONS;
     use std::time::Instant;
-    use std::time::Duration;
+    
 
     #[test]
     fn gen_offlinedata(){
