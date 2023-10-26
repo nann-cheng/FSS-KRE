@@ -42,8 +42,8 @@ impl CondEvalKey
         
         let (mut key0_Bin, mut key1_Bin) = (bincode::serialize(&key0).expect("Serialize value error"), bincode::serialize(&key1).expect("Serialize value error"));
 
-        println!("key0_Bin size is: {}",key0_Bin.len());
-        println!("key0_Bin first byte is: {}",key1_Bin[0]);
+        // println!("key0_Bin size is: {}",key0_Bin.len());
+        // println!("key0_Bin first byte is: {}",key1_Bin[0]);
         // let key0_Bin: Vec<u8>;
         // match bincode::serialize(&key0).expect("Serialize value error") {
         //     Ok(value) => key0_Bin = value,

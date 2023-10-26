@@ -4,10 +4,10 @@ import numpy as np
 from matplotlib.ticker import MaxNLocator
 
 x = [100, 1000, 10000, 100000, 1000000]
-y= [32, 53, 73, 96, 120]
-y1 = [34, 75, 96, 125, 157]
-y2 = [40, 89, 109, 145, 180]
-y3 = [40, 89, 109, 145, 180]
+y= [1, 5.99, 54, 500, 5110]
+y1 = [1.68, 6.3, 50, 518, 5106]
+y2 = [2.05, 6.77, 50, 513, 5246]
+y3 = [2.6, 6.38, 51, 500, 5144]
 
 fig, ax = plt.subplots(figsize=(5, 2.7), layout='constrained')
 ax.plot(x, y,  '-',  label='Max1')
