@@ -15,7 +15,7 @@ pub async fn max_ic(p: &mut MPCParty<MaxOffline_IC>, x: &Vec<RingElm>) ->RingElm
     let mut beaver_it = p.offlinedata.beavers.iter();
     /*Start: Debug info */
     let x_org = p.netlayer.exchange_ring_vec(x.clone()).await;
-    println!("start:{:?}", x_org);
+    // println!("start:{:?}", x_org);
     /*End:   Debug info */
     while x_len > 1{
        
@@ -65,9 +65,10 @@ pub async fn max_ic(p: &mut MPCParty<MaxOffline_IC>, x: &Vec<RingElm>) ->RingElm
         x_len = x_share.len();  //an important bug is fixed here. fzhang, 0921
         /*Start: Debug info */
         let x_layer = p.netlayer.exchange_ring_vec(x_share.clone()).await;
-        println!("step:{:?}]", x_layer);
+        // println!("step:{:?}]", x_layer);
         /*End:   Debug info */
     }
+    p.netlayer.print_benchmarking().await;
     x_share[0]  
 }
 
@@ -436,7 +437,8 @@ pub async fn extract_kmax(p: &mut MPCParty<MaxOffline_IC>, x_share: &Vec<RingElm
     /***************************Debug Info ****************************/
     let msg_kmax_share = [kmax_share].to_vec();
     let msg_kmax = p.netlayer.exchange_ring_vec(msg_kmax_share).await;
-    println!("kmax={:?}", msg_kmax);
+    // println!("kmax={:?}", msg_kmax);
     /***************************Debug Info ****************************/
+    p.netlayer.print_benchmarking().await;
     kmax_share
 }

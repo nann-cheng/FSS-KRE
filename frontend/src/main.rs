@@ -18,6 +18,11 @@ use std::io::Write;
 use std::env;
 use rand::Rng;
 
+
+const LAN_ADDRESS: &'static str = "127.0.0.1:8088";
+const WAN_ADDRESS: &'static str = "149.28.35.104:8088";
+
+
 #[derive(PartialEq,PartialOrd)]
 pub enum TEST_OPTIONS{
     BITWISE_MAX = 1,
@@ -28,9 +33,8 @@ pub enum TEST_OPTIONS{
     TRIVAL_FSS_KRE= 6
 }
 
-pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::TRIVAL_FSS_MAX;
-// pub const TEST_SIMULATE_NETWORK: bool = false;
-// pub const TEST_REAL_NETWORK: bool = false;
+pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::TRIVAL_FSS_KRE;
+pub const TEST_WAN_NETWORK: bool = false;
 
 //m: set size
 const INPUT_SIZE: usize = 10usize;
@@ -77,7 +81,7 @@ async fn main() {
 
     let mut result = vec![false;INPUT_BITS];
 
-    let mut netlayer = NetInterface::new(is_server, "127.0.0.1:8088").await;
+    let mut netlayer = NetInterface::new(is_server, if TEST_WAN_NETWORK{WAN_ADDRESS}else{LAN_ADDRESS}).await;
 
     if M_TEST_CHOICE<=TEST_OPTIONS::BATCH_KRE{
         if M_TEST_CHOICE == TEST_OPTIONS::BITWISE_MAX{
@@ -116,13 +120,13 @@ async fn main() {
         let mut f_cmp = File::create(format!( "../test/cmp{}.bin", &index)).expect("create failed");
         f_cmp.write_all(&bincode::serialize(&result).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
     }else{
+        let mut rng = rand::thread_rng();
+        let mut xx_share = Vec::<RingElm>::new();
+        for i in 0..INPUT_SIZE{
+            let r = rng.gen_range(1..50) as u32;
+            xx_share.push(RingElm::from(r));
+        }
         if M_TEST_CHOICE == TEST_OPTIONS::TRIVAL_FSS_MAX{
-                let mut rng = rand::thread_rng();
-                let mut xx_share = Vec::<RingElm>::new();
-                for i in 0..INPUT_SIZE{
-                    let r = rng.gen_range(1..50) as u32;
-                    xx_share.push(RingElm::from(r));
-                }
                 let mut offlinedata = MaxOffline_IC::new();
                 offlinedata.loadData(&index_ID, false); // if max, false
                 netlayer.reset_timer().await;
@@ -131,14 +135,14 @@ async fn main() {
                 let mut ringele_result = max_ic(&mut p, &xx_share).await;
         }
         else if M_TEST_CHOICE == TEST_OPTIONS::TRIVAL_FSS_KRE{
-            // let mut offlinedata = MaxOffline_IC::new();
-            // offlinedata.loadData(&index_ID, true); // if kmax, true
-            // netlayer.reset_timer().await;
-            // let mut p = MPCParty::<MaxOffline_IC>::new(offlinedata, netlayer);
-            // p.setup(INPUT_SIZE, INPUT_BITS);
-            // let kValue = RingElm::from(if is_server{0u32} else {K_GLOBAL});
-            // heap_sort(&mut p, &mut x_share).await;
-            // result = extract_kmax(&mut p, &x_share, kValue).await;
+            let mut offlinedata = MaxOffline_IC::new();
+            offlinedata.loadData(&index_ID, true); // if kmax, true
+            netlayer.reset_timer().await;
+            let mut p = MPCParty::<MaxOffline_IC>::new(offlinedata, netlayer);
+            p.setup(INPUT_SIZE, INPUT_BITS);
+            let kValue = RingElm::from(if is_server{0u32} else {K_GLOBAL});
+            heap_sort(&mut p, &mut xx_share).await;
+            let mut ringele_result = extract_kmax(&mut p, &xx_share, kValue).await;
         }
     }
 }
