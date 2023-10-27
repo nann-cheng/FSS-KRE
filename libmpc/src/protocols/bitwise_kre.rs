@@ -72,6 +72,7 @@ pub async fn bitwise_kre(p: &mut MPCParty<BitKreOffline>, x_bits: &Vec<bool>, kV
             msg0.append(if qb_share{ &mut p.offlinedata.condeval_k_share[2*i+j].sk_1 } else {&mut p.offlinedata.condeval_k_share[2*i+j].sk_0});
         }
 
+        println!("Debug 1");
         let (beaver0, beaver1) = (beavers.next().unwrap(), beavers.next().unwrap());
         let ne_qa_share = {if is_server{RingElm::one()} else {RingElm::zero()}} - p.offlinedata.base.qa_share[i];
         msg0.append(&mut beaver0.beaver_mul0(p.offlinedata.base.qa_share[i], ri1_share));
@@ -88,6 +89,8 @@ pub async fn bitwise_kre(p: &mut MPCParty<BitKreOffline>, x_bits: &Vec<bool>, kV
 
         // println!("ci_0: {:?}", ci_0);
         // println!("ci_1: {:?} \n", ci_1);
+
+        println!("Debug 2");
 
         let mut ri_share = beaver0.beaver_mul1(is_server,&otherMsg0[2*(condEvalLen+4)..2*(condEvalLen+4)+8].to_vec());
         ri_share.add(& beaver1.beaver_mul1(is_server,&otherMsg0[2*(condEvalLen+4)+8..].to_vec()));
@@ -115,6 +118,9 @@ pub async fn bitwise_kre(p: &mut MPCParty<BitKreOffline>, x_bits: &Vec<bool>, kV
 
         // println!("sigma_i: {} ", sigma_i);
         //Refresh secret sharing values. 
+
+        println!("Debug 3");
+
         if sigma_i{
             k_share = k_share -  t2_share;
             vi_share = ri_share + t1_share - t2_share;
