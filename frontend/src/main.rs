@@ -38,8 +38,6 @@ pub enum TEST_OPTIONS{
 pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::BITWISE_KRE;
 pub const TEST_WAN_NETWORK: bool = true;
 
-//m: set size
-// pub static mut INPUT_SIZE: usize = 1000usize;
 //n: input domain length
 const INPUT_BITS: usize = 15usize;
 const BATCH_SIZE: usize = 3usize;
@@ -70,6 +68,7 @@ async fn main() {
         eprintln!("No arguments provided.");
     }
 
+    //m: set pre-defined size
     let INPUT_PARAMETERS:Vec<usize> = vec![100,1000,10000,100000,1000000];
     for i in 0..INPUT_PARAMETERS.len(){
         let input_size = INPUT_PARAMETERS[i];
