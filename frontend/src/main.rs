@@ -150,7 +150,11 @@ async fn main() {
         }
 
         if !is_server{
-            sleep(Duration::from_secs((5+(i/4)*10).try_into().unwrap()));
+            if i==4{
+                sleep(Duration::from_secs(15));
+            }else{
+                sleep(Duration::from_secs(5));
+            }
         }
     }
 }
