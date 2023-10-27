@@ -21,7 +21,6 @@ use rand::Rng;
 const LAN_ADDRESS: &'static str = "127.0.0.1:8088";
 const WAN_ADDRESS: &'static str = "149.28.35.104:8088";
 
-
 #[derive(PartialEq,PartialOrd)]
 pub enum TEST_OPTIONS{
     BITWISE_MAX = 1,
@@ -32,14 +31,13 @@ pub enum TEST_OPTIONS{
     TRIVAL_FSS_KRE= 6
 }
 
-pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::BATCH_MAX;
+pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::BITWISE_KRE;
 pub const TEST_WAN_NETWORK: bool = true;
 
 //m: set size
-const INPUT_SIZE: usize = 1000000usize;
+const INPUT_SIZE: usize = 100usize;
 //n: input domain length
-const INPUT_BITS: usize = 30usize;
-
+const INPUT_BITS: usize = 15usize;
 const BATCH_SIZE: usize = 3usize;
 const K_GLOBAL: u32 = 1;
 

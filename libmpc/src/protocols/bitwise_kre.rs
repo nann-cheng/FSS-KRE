@@ -34,6 +34,9 @@ pub async fn bitwise_kre(p: &mut MPCParty<BitKreOffline>, x_bits: &Vec<bool>, kV
     let mut vi_share= if is_server{ RingElm::from(m as u32) } else {RingElm::zero()};
     let mut k_share = kValue.clone();
     let mut beavers = p.offlinedata.base.beavers.iter_mut();
+
+    println!("Debug 0");
+
     //Online-step-3. Start bit-by-bit prefix query
     for i in 0..n{
         // println!("***************start the {} iteration***************", i);
