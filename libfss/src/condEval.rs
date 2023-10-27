@@ -30,7 +30,8 @@ impl CondEvalKey
         let mut condEvalK1 = condEvalK0.clone();
 
         //The KeyGen step in Table3 of condEval paper
-        let root_seed = PrgSeed::random();
+        // let root_seed = PrgSeed::random();
+        let root_seed = PrgSeed::zero();
         let mut stream = FixedKeyPrgStream::new();
         stream.set_key(&root_seed.key);
 
