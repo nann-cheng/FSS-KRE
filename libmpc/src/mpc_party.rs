@@ -8,7 +8,7 @@ pub struct MPCParty<T>{
 }
 
 impl<T>  MPCParty<T>{
-    pub fn new(data: T, netinterface: NetInterface)->Self{
+    pub fn new(data: T, netinterface:  NetInterface)->Self{
         MPCParty { offlinedata: data, m: 0, n: 0, netlayer: netinterface}
     }
     pub fn setup(&mut self, input_size: usize, input_bits: usize){

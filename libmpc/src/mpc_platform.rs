@@ -12,6 +12,7 @@ use fss::Group;
 use std::time::Instant;
 use std::time::Duration;
 
+// #[derive(Clone)]
 pub struct NetInterface{
     //pub listener: TcpListener,
     pub is_server: bool,
