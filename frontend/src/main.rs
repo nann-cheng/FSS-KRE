@@ -39,7 +39,7 @@ pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::BITWISE_KRE;
 pub const TEST_WAN_NETWORK: bool = true;
 
 //n: input domain length
-const INPUT_BITS: usize = 15usize;
+const INPUT_BITS: usize = 30usize;
 const BATCH_SIZE: usize = 3usize;
 const K_GLOBAL: u32 = 1;
 
@@ -150,7 +150,7 @@ async fn main() {
         }
 
         if !is_server{
-            sleep(Duration::from_secs(5));
+            sleep(Duration::from_secs(5+(i/5)*15));
         }
     }
 }
