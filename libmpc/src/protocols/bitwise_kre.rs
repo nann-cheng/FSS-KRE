@@ -81,8 +81,6 @@ pub async fn bitwise_kre(p: &mut MPCParty<BitKreOffline>, x_bits: &Vec<bool>, kV
         //Msg-format be: alpha0-4||condEvalDecrypt0||alpha1-4||condEvalDecrypt1||4+4(Mul)||4+4(Mul)
         let mut condEvalLen:usize = (msg0.len() - 4*2 - 8*2)/2;
 
-        println!("Debug 1.4");
-
         let otherMsg0 = p.netlayer.exchange_byte_vec(&msg0.clone()).await;//Perform Network communication
 
         println!("Debug 1.5");
@@ -90,12 +88,12 @@ pub async fn bitwise_kre(p: &mut MPCParty<BitKreOffline>, x_bits: &Vec<bool>, kV
         //CondEval evaluation part:
         cond_Alpha0.add(&RingElm::from(otherMsg0[..4].to_vec()));
         cond_Alpha1.add(&RingElm::from(otherMsg0[condEvalLen+4..condEvalLen+8].to_vec()));
+        println!("Debug 1.6");
+
         let mut ci_0: BinElm = p.offlinedata.condeval_k_share[2*i].eval1(&cond_Alpha0, &otherMsg0[4..condEvalLen+4].to_vec());
         let ci_1 = p.offlinedata.condeval_k_share[2*i+1].eval1(&cond_Alpha1, &otherMsg0[8+condEvalLen..8+2*condEvalLen].to_vec());
-
         // println!("ci_0: {:?}", ci_0);
         // println!("ci_1: {:?} \n", ci_1);
-
         println!("Debug 2");
 
         let mut ri_share = beaver0.beaver_mul1(is_server,&otherMsg0[2*(condEvalLen+4)..2*(condEvalLen+4)+8].to_vec());
