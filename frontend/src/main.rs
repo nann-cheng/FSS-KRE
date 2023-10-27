@@ -150,7 +150,7 @@ async fn main() {
         }
 
         if !is_server{
-            sleep(Duration::from_secs(2));
+            sleep(Duration::from_secs(5));
         }
     }
 }
