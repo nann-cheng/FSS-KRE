@@ -15,7 +15,7 @@ To generate offline data (for batch_max), Open one terminal:
 
 Open two terminals
     - cd frontend
-    - In the 1st terminal: cargo run 0
-    - In the 2nd terminal: cargo run 1
+    - In the 1st terminal: cargo run --release 0
+    - In the 2nd terminal: cargo run --release 1
 
 The results are written in "test", in frontend repo then run "cargo test test_result" to verify the results.
