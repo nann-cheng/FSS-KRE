@@ -18,5 +18,5 @@ ax.set_xlabel('Input scale ($m$)')
 ax.set_ylabel('Execution time [ms]')
 ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 ax.legend()
-
+plt.xscale("log")  # Optional, to set the x-axis to a logarithmic scale
 plt.show()
