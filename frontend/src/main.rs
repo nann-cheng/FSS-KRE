@@ -150,7 +150,7 @@ async fn main() {
         }
 
         if !is_server{
-            if i==4{
+            if i==3{//the second last one
                 sleep(Duration::from_secs(15));
             }else{
                 sleep(Duration::from_secs(5));
