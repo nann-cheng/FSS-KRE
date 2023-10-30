@@ -55,7 +55,7 @@ else:
 
     # Add titles and labels
     # plt.title("Scatter Plot of Data")
-    plt.xlabel("Input scale")
+    plt.xlabel("Input scale (m)")
     plt.ylabel("Communication per server[MB]")
     plt.xscale("log")  # Optional, to set the x-axis to a logarithmic scale
 
