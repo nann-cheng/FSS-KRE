@@ -185,7 +185,8 @@ fn gen_offlinedata(input_size:usize){
             let seed = PrgSeed::zero();//Guarantee same input bits to ease the debug process
             let mut stream = FixedKeyPrgStream::new();
             stream.set_key(&seed.key);
-            MaxOffline_IC::genData(&mut stream, input_size*(input_size - 1) / 2 , input_size * (input_size-1) / 2 + 2 * input_size, input_size);
+            MaxOffline_IC::genData(&mut stream, input_size - 1 , input_size-1, 0);
+            // MaxOffline_IC::genData(&mut stream, input_size*(input_size - 1) / 2 , input_size * (input_size-1) / 2 + 2 * input_size, input_size);
         },
         TEST_OPTIONS::TRIVAL_FSS_KRE => {
             let offline = BatchKreOffline::new();
