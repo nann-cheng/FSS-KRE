@@ -35,7 +35,7 @@ pub enum TEST_OPTIONS{
     TRIVAL_FSS_KRE= 6
 }
 
-pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::BATCH_KRE;
+pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::TRIVAL_FSS_KRE;
 pub const TEST_WAN_NETWORK: bool = true;
 
 //n: input domain length
@@ -69,8 +69,8 @@ async fn main() {
     }
 
     //m: set pre-defined size
-    let INPUT_PARAMETERS:Vec<usize> = vec![100,1000,10000,100000,1000000];
-    // let INPUT_PARAMETERS:Vec<usize> = vec![1000,10000,100000,500000];
+    // let INPUT_PARAMETERS:Vec<usize> = vec![100,1000,10000,100000,1000000];
+    let INPUT_PARAMETERS:Vec<usize> = vec![1000,10000,100000,500000];
     // let INPUT_PARAMETERS:Vec<usize> = vec![500000];
     for i in 0..INPUT_PARAMETERS.len(){
         let input_size = INPUT_PARAMETERS[i];
@@ -189,8 +189,10 @@ fn gen_offlinedata(input_size:usize){
             // MaxOffline_IC::genData(&mut stream, input_size*(input_size - 1) / 2 , input_size * (input_size-1) / 2 + 2 * input_size, input_size);
         },
         TEST_OPTIONS::TRIVAL_FSS_KRE => {
-            let offline = BatchKreOffline::new();
-            offline.genData(&PrgSeed::zero(), input_size, INPUT_BITS, BATCH_SIZE);
+            let seed = PrgSeed::zero();//Guarantee same input bits to ease the debug process
+            let mut stream = FixedKeyPrgStream::new();
+            stream.set_key(&seed.key);
+            MaxOffline_IC::genData(&mut stream, input_size*(input_size - 1) / 2 , input_size * (input_size-1) / 2 + 2 * input_size, input_size);
         },
     }
     println!("Offline key generation time:{:?}",offline_timer.elapsed());

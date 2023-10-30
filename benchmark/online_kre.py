@@ -9,9 +9,10 @@ is_show_time_figure=False
 if is_show_time_figure:
     x = [100, 1000, 10000, 100000, 1000000]
     y1 = [2.69, 2.61, 2.85, 3.36, 8.39]#(bitKRE, n=15)
-    y2 = [2.30, 2.19, 2.36, 4.25, 21.85]#(batchKRE, \omega=3)
+    y2 = [2.34, 2.29, 2.38, 4.06, 16.71]#(batchKRE, \omega=3)
+
     y3 = [5.12, 4.95, 5.13, 6.42, 16.07]#(bitKRE, n=30)
-    y4 = [4.14, 4.39, 4.85, 7.72, 35.57]#(batchKRE, \omega=3)
+    y4 = [4.43, 4.40, 4.67, 7.32, 34.56]#(batchKRE, \omega=3)
 
     plt.figure(figsize=(5, 2.7), layout='constrained')
 
