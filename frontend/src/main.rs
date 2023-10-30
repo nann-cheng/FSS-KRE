@@ -35,7 +35,7 @@ pub enum TEST_OPTIONS{
     TRIVAL_FSS_KRE= 6
 }
 
-pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::BITWISE_MAX;
+pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::BATCH_MAX;
 pub const TEST_WAN_NETWORK: bool = true;
 
 //n: input domain length
