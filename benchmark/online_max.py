@@ -46,6 +46,11 @@ else:
     y3 = [e/(1024**2) for e in y3]
     y4 = [e/(1024**2) for e in y4]
 
+    print(y1)
+    print(y2)
+    print(y3)
+    print(y4)
+
     plt.figure(figsize=(5, 2.7), layout='constrained')
 
     # Create scatter plots
