@@ -14,7 +14,7 @@ use super::tree_eval_of_idpf;
 
 //Assume n % batchsize == 0
 pub async fn batch_max(p: &mut MPCParty<BatchMaxOffline>, x_bits: &Vec<bool>, batch_size: usize) ->Vec<bool>{
-    let num_threads = 32;
+    let num_threads = 1;
     let pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
     
     let m: usize = p.m;
