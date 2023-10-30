@@ -8,8 +8,9 @@ is_show_time_figure=False
 
 
 # what's reported from trivalKre
-# [10,20,30,50]
-# [,65.43]
+# Amount [10,20,30,50]
+# Time: [7.05,18.84,35.65,65.43]
+# Commu: [1184,4364,9544,25904]
 
 if is_show_time_figure:
     x = [100, 1000, 10000, 100000, 1000000]
