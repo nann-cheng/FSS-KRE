@@ -70,7 +70,7 @@ async fn main() {
 
     //m: set pre-defined size
     // let INPUT_PARAMETERS:Vec<usize> = vec![100,1000,10000,100000,1000000];
-    let INPUT_PARAMETERS:Vec<usize> = vec![1000,10000,100000,500000];
+    let INPUT_PARAMETERS:Vec<usize> = vec![50,10000,100000,500000];
     // let INPUT_PARAMETERS:Vec<usize> = vec![500000];
     for i in 0..INPUT_PARAMETERS.len(){
         let input_size = INPUT_PARAMETERS[i];

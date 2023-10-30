@@ -80,7 +80,7 @@ pub async fn heapify(p: &mut MPCParty<MaxOffline_IC>, x_share: &mut Vec<RingElm>
     let x_len = x_share.len();
     /*Start: Debug info */
     let x_org = p.netlayer.exchange_ring_vec(x_share.clone()).await;
-    println!("start:{:?}", x_org);
+    // println!("start:{:?}", x_org);
     /*End:   Debug info */
     let is_server = p.netlayer.is_server;
     /*let mut ic_key_it = p.offlinedata.ic_key.iter();
@@ -215,7 +215,7 @@ pub async fn heap_sort(p: &mut MPCParty<MaxOffline_IC>, x_share: &mut Vec<RingEl
 
     /*Start: Debug info */
     let x_org = p.netlayer.exchange_ring_vec(x_share.clone()).await;
-    println!("start:{:?}", x_org);
+    // println!("start:{:?}", x_org);
 
     for heap_cnt in 0..x_length{
         let x_len = x_length - heap_cnt; 
