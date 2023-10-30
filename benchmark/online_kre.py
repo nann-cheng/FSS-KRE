@@ -6,6 +6,11 @@ from matplotlib.ticker import MaxNLocator
 # display execuation time figure or communication volume figure
 is_show_time_figure=False
 
+
+# what's reported from trivalKre
+# [10,20,30,50]
+# [,65.43]
+
 if is_show_time_figure:
     x = [100, 1000, 10000, 100000, 1000000]
     y1 = [2.69, 2.61, 2.85, 3.36, 8.39]#(bitKRE, n=15)
