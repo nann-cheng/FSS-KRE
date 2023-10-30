@@ -222,7 +222,7 @@ pub async fn heap_sort(p: &mut MPCParty<MaxOffline_IC>, x_share: &mut Vec<RingEl
         let h = ((x_len+1) as f64).log(2 as f64).ceil() as usize; //the depth of the logic tree that has x_len nodes   
         let mut start_index = (1 << (h-1)) - 1; //the start index of the nodes to be handled
         let mut end_index = x_len - 1;  //the end index of the nodes to be handled
-        println!("****************start heapify**********************");
+        // println!("****************start heapify**********************");
         //println!("start_index = {}, end_index = {}", start_index, end_index);
         for i in (1..h).rev(){
             //println!("h = {}, start_index = {}, end_index = {}", i, start_index, end_index);
@@ -349,7 +349,7 @@ pub async fn heap_sort(p: &mut MPCParty<MaxOffline_IC>, x_share: &mut Vec<RingEl
         /*Start: Debug info */
         let x_layer = p.netlayer.exchange_ring_vec(x_share.clone()).await;
         // println!("sort_i{:?}", x_layer);
-        println!("****************end  heapify**********************");
+        // println!("****************end  heapify**********************");
         /*End:   Debug info */
     }
 }
