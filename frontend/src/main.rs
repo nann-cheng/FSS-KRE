@@ -68,16 +68,16 @@ async fn main() {
         eprintln!("No arguments provided.");
     }
 
-    // let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_MAX,TEST_OPTIONS::BATCH_MAX,TEST_OPTIONS::BITWISE_KRE,TEST_OPTIONS::BATCH_KRE];
-    let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_KRE,TEST_OPTIONS::BATCH_KRE, TEST_OPTIONS::TRIVAL_FSS_KRE];
+    let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_MAX,TEST_OPTIONS::BATCH_MAX,TEST_OPTIONS::BITWISE_KRE,TEST_OPTIONS::BATCH_KRE];
+    // let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_KRE,TEST_OPTIONS::BATCH_KRE, TEST_OPTIONS::TRIVAL_FSS_KRE];
     for protocol in BENCHMARK_PROTOCOL_TYPES{
         println!("Start to test new protocol \n\n\n");
         //m: set pre-defined size
 
             let M_TEST_CHOICE: TEST_OPTIONS = protocol;
 
-        // let INPUT_PARAMETERS:Vec<usize> = vec![100,1000,10000,100000,1000000];
-        let INPUT_PARAMETERS:Vec<usize> = vec![10,30,50,100];
+        let INPUT_PARAMETERS:Vec<usize> = vec![100,1000,10000,100000,1000000];
+        // let INPUT_PARAMETERS:Vec<usize> = vec![10,30,50,100];
         // let INPUT_PARAMETERS:Vec<usize> = vec![500000];
         for i in 0..INPUT_PARAMETERS.len(){
             let input_size = INPUT_PARAMETERS[i];
