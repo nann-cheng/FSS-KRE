@@ -68,97 +68,104 @@ async fn main() {
         eprintln!("No arguments provided.");
     }
 
-    //m: set pre-defined size
-    // let INPUT_PARAMETERS:Vec<usize> = vec![100,1000,10000,100000,1000000];
-    let INPUT_PARAMETERS:Vec<usize> = vec![10,20,30,50];
-    // let INPUT_PARAMETERS:Vec<usize> = vec![500000];
-    for i in 0..INPUT_PARAMETERS.len(){
-        let input_size = INPUT_PARAMETERS[i];
-        gen_offlinedata(input_size);
-        let seed = if is_server {PrgSeed::zero()} else {PrgSeed::one()};//Guarantee same input bits to ease the debug process
-        let mut stream = FixedKeyPrgStream::new();
-        stream.set_key(&seed.key);
-        let x_share = stream.next_bits(INPUT_BITS*input_size);
-        let index =  if is_server {String::from("0")} else {String::from("1")};
-        let index_ID = if is_server{0u8} else {1u8};
+    let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_MAX,TEST_OPTIONS::BATCH_MAX,TEST_OPTIONS::BITWISE_KRE,TEST_OPTIONS::BATCH_KRE];
+    for protocol in &BENCHMARK_PROTOCOL_TYPES{
+        println!("Start to test protocol {:?}", protocol);
+        //m: set pre-defined size
+        // let INPUT_PARAMETERS:Vec<usize> = vec![100,1000,10000,100000,1000000];
+        let INPUT_PARAMETERS:Vec<usize> = vec![10,20,30,50];
+        // let INPUT_PARAMETERS:Vec<usize> = vec![500000];
+        for i in 0..INPUT_PARAMETERS.len(){
+            let input_size = INPUT_PARAMETERS[i];
+            gen_offlinedata(input_size);
+            let seed = if is_server {PrgSeed::zero()} else {PrgSeed::one()};//Guarantee same input bits to ease the debug process
+            let mut stream = FixedKeyPrgStream::new();
+            stream.set_key(&seed.key);
+            let x_share = stream.next_bits(INPUT_BITS*input_size);
+            let index =  if is_server {String::from("0")} else {String::from("1")};
+            let index_ID = if is_server{0u8} else {1u8};
 
-        let mut f_x = File::create(format!( "../test/x{}.bin", &index)).expect("create failed");
-        f_x.write_all(&bincode::serialize(&x_share).expect("Serialize x-bool-share error")).expect("Write x-bool-share error.");
+            let mut f_x = File::create(format!( "../test/x{}.bin", &index)).expect("create failed");
+            f_x.write_all(&bincode::serialize(&x_share).expect("Serialize x-bool-share error")).expect("Write x-bool-share error.");
 
-        let mut result = vec![false;INPUT_BITS];
+            let mut result = vec![false;INPUT_BITS];
 
-        let mut netlayer = NetInterface::new(is_server, if TEST_WAN_NETWORK{WAN_ADDRESS}else{LAN_ADDRESS}).await;
+            let mut netlayer = NetInterface::new(is_server, if TEST_WAN_NETWORK{WAN_ADDRESS}else{LAN_ADDRESS}).await;
 
-        if M_TEST_CHOICE<=TEST_OPTIONS::BATCH_KRE{
-            if M_TEST_CHOICE == TEST_OPTIONS::BITWISE_MAX{
-                    let mut offlinedata = BitMaxOffline::new();
+            if M_TEST_CHOICE<=TEST_OPTIONS::BATCH_KRE{
+                if M_TEST_CHOICE == TEST_OPTIONS::BITWISE_MAX{
+                        let mut offlinedata = BitMaxOffline::new();
+                        offlinedata.loadData(&index_ID);
+                        netlayer.reset_timer().await;
+                        let mut p: MPCParty<BitMaxOffline> = MPCParty::new(offlinedata, netlayer);
+                        p.setup(input_size, INPUT_BITS);
+                        result = bitwise_max(&mut p, &x_share).await;
+                }else if M_TEST_CHOICE == TEST_OPTIONS::BATCH_MAX{
+                    let mut offlinedata = BatchMaxOffline::new();
+                        offlinedata.loadData(&index_ID);
+                        netlayer.reset_timer().await;
+                        let mut p: MPCParty<BatchMaxOffline> = MPCParty::new(offlinedata, netlayer);
+                        p.setup(input_size, INPUT_BITS);
+                        result = batch_max(&mut p, &x_share, BATCH_SIZE).await;
+                }else if M_TEST_CHOICE == TEST_OPTIONS::BITWISE_KRE{
+                        let mut offlinedata: BitKreOffline = BitKreOffline::new();
+                        offlinedata.loadData(&index_ID);
+                        netlayer.reset_timer().await;
+                        let mut p: MPCParty<BitKreOffline> = MPCParty::new(offlinedata, netlayer);
+                        p.setup(input_size, INPUT_BITS);
+
+                        let kValue = RingElm::from(if is_server{0u32} else {K_GLOBAL});
+                        result = bitwise_kre(&mut p, &x_share, &kValue).await;
+                }else if M_TEST_CHOICE == TEST_OPTIONS::BATCH_KRE{
+                    let mut offlinedata = BatchKreOffline::new();
                     offlinedata.loadData(&index_ID);
                     netlayer.reset_timer().await;
-                    let mut p: MPCParty<BitMaxOffline> = MPCParty::new(offlinedata, netlayer);
+                    let mut p: MPCParty<BatchKreOffline> = MPCParty::new(offlinedata, netlayer);
                     p.setup(input_size, INPUT_BITS);
-                    result = bitwise_max(&mut p, &x_share).await;
-            }else if M_TEST_CHOICE == TEST_OPTIONS::BATCH_MAX{
-                let mut offlinedata = BatchMaxOffline::new();
-                    offlinedata.loadData(&index_ID);
-                    netlayer.reset_timer().await;
-                    let mut p: MPCParty<BatchMaxOffline> = MPCParty::new(offlinedata, netlayer);
-                    p.setup(input_size, INPUT_BITS);
-                    result = batch_max(&mut p, &x_share, BATCH_SIZE).await;
-            }else if M_TEST_CHOICE == TEST_OPTIONS::BITWISE_KRE{
-                    let mut offlinedata: BitKreOffline = BitKreOffline::new();
-                    offlinedata.loadData(&index_ID);
-                    netlayer.reset_timer().await;
-                    let mut p: MPCParty<BitKreOffline> = MPCParty::new(offlinedata, netlayer);
-                    p.setup(input_size, INPUT_BITS);
-
                     let kValue = RingElm::from(if is_server{0u32} else {K_GLOBAL});
-                    result = bitwise_kre(&mut p, &x_share, &kValue).await;
-            }else if M_TEST_CHOICE == TEST_OPTIONS::BATCH_KRE{
-                let mut offlinedata = BatchKreOffline::new();
-                offlinedata.loadData(&index_ID);
-                netlayer.reset_timer().await;
-                let mut p: MPCParty<BatchKreOffline> = MPCParty::new(offlinedata, netlayer);
-                p.setup(input_size, INPUT_BITS);
-                let kValue = RingElm::from(if is_server{0u32} else {K_GLOBAL});
-                result = batch_kre(&mut p, &x_share, BATCH_SIZE,&kValue).await;
-            }
-            let mut f_cmp = File::create(format!( "../test/cmp{}.bin", &index)).expect("create failed");
-            f_cmp.write_all(&bincode::serialize(&result).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
-        }else{
-            let mut rng = rand::thread_rng();
-            let mut xx_share = Vec::<RingElm>::new();
-            for _i in 0..input_size{
-                let r = rng.gen_range(1..50) as u32;
-                xx_share.push(RingElm::from(r));
-            }
-            if M_TEST_CHOICE == TEST_OPTIONS::TRIVAL_FSS_MAX{
+                    result = batch_kre(&mut p, &x_share, BATCH_SIZE,&kValue).await;
+                }
+                let mut f_cmp = File::create(format!( "../test/cmp{}.bin", &index)).expect("create failed");
+                f_cmp.write_all(&bincode::serialize(&result).expect("Serialize cmp-bool-share error")).expect("Write cmp-bool-share error.");
+            }else{
+                let mut rng = rand::thread_rng();
+                let mut xx_share = Vec::<RingElm>::new();
+                for _i in 0..input_size{
+                    let r = rng.gen_range(1..50) as u32;
+                    xx_share.push(RingElm::from(r));
+                }
+                if M_TEST_CHOICE == TEST_OPTIONS::TRIVAL_FSS_MAX{
+                        let mut offlinedata = MaxOffline_IC::new();
+                        offlinedata.loadData(&index_ID, false); // if max, false
+                        netlayer.reset_timer().await;
+                        let mut p = MPCParty::<MaxOffline_IC>::new(offlinedata, netlayer);
+                        p.setup(input_size, INPUT_BITS);
+                        let _ringele_result = max_ic(&mut p, &xx_share).await;
+                }
+                else if M_TEST_CHOICE == TEST_OPTIONS::TRIVAL_FSS_KRE{
                     let mut offlinedata = MaxOffline_IC::new();
-                    offlinedata.loadData(&index_ID, false); // if max, false
+                    offlinedata.loadData(&index_ID, true); // if kmax, true
                     netlayer.reset_timer().await;
                     let mut p = MPCParty::<MaxOffline_IC>::new(offlinedata, netlayer);
                     p.setup(input_size, INPUT_BITS);
-                    let _ringele_result = max_ic(&mut p, &xx_share).await;
+                    let kValue = RingElm::from(if is_server{0u32} else {K_GLOBAL});
+                    heap_sort(&mut p, &mut xx_share).await;
+                    let _ringele_result = extract_kmax(&mut p, &xx_share, kValue).await;
+                }
             }
-            else if M_TEST_CHOICE == TEST_OPTIONS::TRIVAL_FSS_KRE{
-                let mut offlinedata = MaxOffline_IC::new();
-                offlinedata.loadData(&index_ID, true); // if kmax, true
-                netlayer.reset_timer().await;
-                let mut p = MPCParty::<MaxOffline_IC>::new(offlinedata, netlayer);
-                p.setup(input_size, INPUT_BITS);
-                let kValue = RingElm::from(if is_server{0u32} else {K_GLOBAL});
-                heap_sort(&mut p, &mut xx_share).await;
-                let _ringele_result = extract_kmax(&mut p, &xx_share, kValue).await;
-            }
-        }
 
-        if !is_server{
-            if i==3{//the second last one
-                sleep(Duration::from_secs(15));
-            }else{
-                sleep(Duration::from_secs(5));
+            if !is_server{
+                if i==3{//the second last one
+                    sleep(Duration::from_secs(15));
+                }else{
+                    sleep(Duration::from_secs(5));
+                }
             }
         }
+        
+        println!("End testing protocol {:?}", protocol);
     }
+    
 }
 
 fn gen_offlinedata(input_size:usize){
