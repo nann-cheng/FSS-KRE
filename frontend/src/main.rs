@@ -81,7 +81,7 @@ async fn main() {
         // let INPUT_PARAMETERS:Vec<usize> = vec![500000];
         for i in 0..INPUT_PARAMETERS.len(){
             let input_size = INPUT_PARAMETERS[i];
-            gen_offlinedata(M_TEST_CHOICE,input_size);
+            gen_offlinedata(&M_TEST_CHOICE, input_size);
             let seed = if is_server {PrgSeed::zero()} else {PrgSeed::one()};//Guarantee same input bits to ease the debug process
             let mut stream = FixedKeyPrgStream::new();
             stream.set_key(&seed.key);
@@ -173,7 +173,7 @@ async fn main() {
     
 }
 
-fn gen_offlinedata(M_TEST_CHOICE:TEST_OPTIONS, input_size:usize){
+fn gen_offlinedata(&M_TEST_CHOICE:TEST_OPTIONS, input_size:usize){
     let offline_timer = Instant::now();
     match M_TEST_CHOICE{
         TEST_OPTIONS::BITWISE_MAX => {
