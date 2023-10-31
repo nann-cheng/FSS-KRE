@@ -25,7 +25,7 @@ use std::time::Duration;
 const LAN_ADDRESS: &'static str = "127.0.0.1:8088";
 const WAN_ADDRESS: &'static str = "45.63.6.86:8088";
 
-#[derive(PartialEq,PartialOrd)]
+#[derive(PartialEq,PartialOrd,Debug)]
 pub enum TEST_OPTIONS{
     BITWISE_MAX = 1,
     BATCH_MAX= 2,
