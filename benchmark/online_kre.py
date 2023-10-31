@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib.ticker import MaxNLocator
 
 # display execuation time figure or communication volume figure
-is_show_time_figure=False
+is_show_time_figure=True
 
 
 # what's reported from trivalKre
@@ -26,15 +26,15 @@ if is_show_time_figure:
     plt.figure(figsize=(5, 2.7), layout='constrained')
 
     # Create scatter plots
-    plt.scatter(x, y1, label='y1 (bitKRE, n=15)', marker='o')
-    plt.scatter(x, y2, label='y2 (batchKRE, ω=3)', marker='x')
-    plt.scatter(x, y3, label='y3 (bitKRE, n=30)', marker='s')
-    plt.scatter(x, y4, label='y4 (batchKRE, ω=3)', marker='d')
+    plt.scatter(x, y1, label='$\Pi_{\mathsf{Max1}} (n=15)$', marker='o')
+    plt.scatter(x, y2, label='$\Pi_{\mathsf{Max2}} (n=15, \omega=3)$', marker='x')
+    plt.scatter(x, y3, label='$\Pi_{\mathsf{Max1}} (n=30)$', marker='s')
+    plt.scatter(x, y4, label='$\Pi_{\mathsf{Max2}} (n=30, \omega=3)$', marker='d')
 
     # Add titles and labels
     # plt.title("Scatter Plot of Data")
     plt.xlabel("Input scale (m)")
-    plt.ylabel("Execution time [s]")
+    plt.ylabel("Computation time [s]")
     plt.xscale("log")  # Optional, to set the x-axis to a logarithmic scale
 
     # Add a legend
@@ -58,15 +58,15 @@ else:
     plt.figure(figsize=(5, 2.7), layout='constrained')
 
     # Create scatter plots
-    plt.scatter(x, y1, label='y1 (bitbitKRE, n=15)', marker='o')
-    plt.scatter(x, y2, label='y2 (batchbitKRE, ω=3)', marker='x')
-    plt.scatter(x, y3, label='y3 (bitbitKRE, n=30)', marker='s')
-    plt.scatter(x, y4, label='y4 (batchbitKRE, ω=3)', marker='d')
+    plt.scatter(x, y1, label='$\Pi_{\mathsf{Max1}} (n=15)$', marker='o')
+    plt.scatter(x, y2, label='$\Pi_{\mathsf{Max2}} (n=15, \omega=3)$', marker='x')
+    plt.scatter(x, y3, label='$\Pi_{\mathsf{Max1}} (n=30)$', marker='s')
+    plt.scatter(x, y4, label='$\Pi_{\mathsf{Max2}} (n=30, \omega=3)$', marker='d')
 
     # Add titles and labels
     # plt.title("Scatter Plot of Data")
     plt.xlabel("Input scale")
-    plt.ylabel("Communication per server[KB]")
+    plt.ylabel("Commu. volume [MB]")
     plt.xscale("log")  # Optional, to set the x-axis to a logarithmic scale
 
     # Add a legend

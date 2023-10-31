@@ -17,15 +17,15 @@ if is_show_time_figure:
     plt.figure(figsize=(5, 2.7), layout='constrained')
 
     # Create scatter plots
-    plt.scatter(x, y1, label='y1 (bitMax, n=15)', marker='o')
-    plt.scatter(x, y2, label='y2 (batchMax, n=15, ω=3)', marker='x')
-    plt.scatter(x, y3, label='y3 (bitMax, n=30)', marker='s')
-    plt.scatter(x, y4, label='y4 (batchMax, n=30, ω=3)', marker='d')
+    plt.scatter(x, y1, label='$\Pi_{\mathsf{Max1}} (n=15)$', marker='o')
+    plt.scatter(x, y2, label='$\Pi_{\mathsf{Max2}} (n=15, \omega=3)$', marker='x')
+    plt.scatter(x, y3, label='$\Pi_{\mathsf{Max1}} (n=30)$', marker='s')
+    plt.scatter(x, y4, label='$\Pi_{\mathsf{Max2}} (n=30, \omega=3)$', marker='d')
 
     # Add titles and labels
     # plt.title("Scatter Plot of Data")
     plt.xlabel("Input scale (m)")
-    plt.ylabel("Execution time [s]")
+    plt.ylabel("Computation time [s]")
     plt.xscale("log")  # Optional, to set the x-axis to a logarithmic scale
 
     # Add a legend
@@ -46,23 +46,23 @@ else:
     y3 = [e/(1024**2) for e in y3]
     y4 = [e/(1024**2) for e in y4]
 
-    print(y1)
-    print(y2)
-    print(y3)
-    print(y4)
+    # print(y1)
+    # print(y2)
+    # print(y3)
+    # print(y4)
 
     plt.figure(figsize=(5, 2.7), layout='constrained')
 
     # Create scatter plots
-    plt.scatter(x, y1, label='y1 (bitMax, n=15)', marker='o')
-    plt.scatter(x, y2, label='y2 (batchMax, n=15, ω=3)', marker='x')
-    plt.scatter(x, y3, label='y3 (bitMax, n=30)', marker='s')
-    plt.scatter(x, y4, label='y4 (batchMax, n=30, ω=3)', marker='d')
+    plt.scatter(x, y1, label='$\Pi_{\mathsf{Max1}} (n=15)$', marker='o')
+    plt.scatter(x, y2, label='$\Pi_{\mathsf{Max2}} (n=15, \omega=3)$', marker='x')
+    plt.scatter(x, y3, label='$\Pi_{\mathsf{Max1}} (n=30)$', marker='s')
+    plt.scatter(x, y4, label='$\Pi_{\mathsf{Max2}} (n=30, \omega=3)$', marker='d')
 
     # Add titles and labels
     # plt.title("Scatter Plot of Data")
     plt.xlabel("Input scale (m)")
-    plt.ylabel("Communication per server[MB]")
+    plt.ylabel("Commu. volume [MB]")
     plt.xscale("log")  # Optional, to set the x-axis to a logarithmic scale
 
     # Add a legend
