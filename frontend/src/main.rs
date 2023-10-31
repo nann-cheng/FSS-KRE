@@ -173,7 +173,7 @@ async fn main() {
     
 }
 
-fn gen_offlinedata(&M_TEST_CHOICE:TEST_OPTIONS, input_size:usize){
+fn gen_offlinedata(M_TEST_CHOICE:&TEST_OPTIONS, input_size:usize){
     let offline_timer = Instant::now();
     match M_TEST_CHOICE{
         TEST_OPTIONS::BITWISE_MAX => {
