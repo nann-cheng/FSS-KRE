@@ -35,7 +35,7 @@ pub enum TEST_OPTIONS{
     TRIVAL_FSS_KRE= 6
 }
 
-pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::BATCH_KRE;
+// pub const M_TEST_CHOICE: TEST_OPTIONS = TEST_OPTIONS::BATCH_KRE;
 pub const TEST_WAN_NETWORK: bool = true;
 
 //n: input domain length
@@ -71,7 +71,7 @@ async fn main() {
     // let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_MAX,TEST_OPTIONS::BATCH_MAX,TEST_OPTIONS::BITWISE_KRE,TEST_OPTIONS::BATCH_KRE];
     let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_KRE,TEST_OPTIONS::BATCH_KRE, TEST_OPTIONS::TRIVAL_FSS_KRE];
     for protocol in &BENCHMARK_PROTOCOL_TYPES{
-        // println!("Start to test protocol {:?}", protocol);
+        println!("Start to test new protocol");
         //m: set pre-defined size
         // let INPUT_PARAMETERS:Vec<usize> = vec![100,1000,10000,100000,1000000];
         let INPUT_PARAMETERS:Vec<usize> = vec![10,30,50,100];
@@ -92,6 +92,8 @@ async fn main() {
             let mut result = vec![false;INPUT_BITS];
 
             let mut netlayer = NetInterface::new(is_server, if TEST_WAN_NETWORK{WAN_ADDRESS}else{LAN_ADDRESS}).await;
+
+            const M_TEST_CHOICE: TEST_OPTIONS = protocol;
 
             if M_TEST_CHOICE<=TEST_OPTIONS::BATCH_KRE{
                 if M_TEST_CHOICE == TEST_OPTIONS::BITWISE_MAX{
