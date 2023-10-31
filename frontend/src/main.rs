@@ -70,7 +70,7 @@ async fn main() {
 
     // let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_MAX,TEST_OPTIONS::BATCH_MAX,TEST_OPTIONS::BITWISE_KRE,TEST_OPTIONS::BATCH_KRE];
     let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_KRE,TEST_OPTIONS::BATCH_KRE, TEST_OPTIONS::TRIVAL_FSS_KRE];
-    for protocol in &BENCHMARK_PROTOCOL_TYPES{
+    for protocol in BENCHMARK_PROTOCOL_TYPES{
         println!("Start to test new protocol \n\n\n");
         //m: set pre-defined size
         // let INPUT_PARAMETERS:Vec<usize> = vec![100,1000,10000,100000,1000000];
