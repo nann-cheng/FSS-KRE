@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib.ticker import MaxNLocator
 
 # display execuation time figure or communication volume figure
-is_show_time_figure=True
+is_show_time_figure=False
 
 
 # what's reported from trivalKre
@@ -26,10 +26,10 @@ if is_show_time_figure:
     plt.figure(figsize=(5, 2.7), layout='constrained')
 
     # Create scatter plots
-    plt.scatter(x, y1, label='$\Pi_{\mathsf{Max1}} (n=15)$', marker='o')
-    plt.scatter(x, y2, label='$\Pi_{\mathsf{Max2}} (n=15, \omega=3)$', marker='x')
-    plt.scatter(x, y3, label='$\Pi_{\mathsf{Max1}} (n=30)$', marker='s')
-    plt.scatter(x, y4, label='$\Pi_{\mathsf{Max2}} (n=30, \omega=3)$', marker='d')
+    plt.scatter(x, y1, label='$\Pi_{\mathsf{Kre1}} (n=15)$', marker='o')
+    plt.scatter(x, y2, label='$\Pi_{\mathsf{Kre2}} (n=15, \omega=3)$', marker='x')
+    plt.scatter(x, y3, label='$\Pi_{\mathsf{Kre1}} (n=30)$', marker='s')
+    plt.scatter(x, y4, label='$\Pi_{\mathsf{Kre}} (n=30, \omega=3)$', marker='d')
 
     # Add titles and labels
     # plt.title("Scatter Plot of Data")
@@ -58,10 +58,10 @@ else:
     plt.figure(figsize=(5, 2.7), layout='constrained')
 
     # Create scatter plots
-    plt.scatter(x, y1, label='$\Pi_{\mathsf{Max1}} (n=15)$', marker='o')
-    plt.scatter(x, y2, label='$\Pi_{\mathsf{Max2}} (n=15, \omega=3)$', marker='x')
-    plt.scatter(x, y3, label='$\Pi_{\mathsf{Max1}} (n=30)$', marker='s')
-    plt.scatter(x, y4, label='$\Pi_{\mathsf{Max2}} (n=30, \omega=3)$', marker='d')
+    plt.scatter(x, y1, label='$\Pi_{\mathsf{Kre1}} (n=15)$', marker='o')
+    plt.scatter(x, y2, label='$\Pi_{\mathsf{Kre2}} (n=15, \omega=3)$', marker='x')
+    plt.scatter(x, y3, label='$\Pi_{\mathsf{Kre1}} (n=30)$', marker='s')
+    plt.scatter(x, y4, label='$\Pi_{\mathsf{Kre}} (n=30, \omega=3)$', marker='d')
 
     # Add titles and labels
     # plt.title("Scatter Plot of Data")
