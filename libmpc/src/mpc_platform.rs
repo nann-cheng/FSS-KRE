@@ -61,7 +61,7 @@ impl NetInterface{
     }
 
     pub async fn print_benchmarking(&mut self){
-        // println!("Online rounds:{:?}",self.rounds_occured);
+        println!("Online rounds:{:?}",self.rounds_occured);
         println!("Communication volume: {:?}",self.received);
         println!("Computation time: {:?} \n",self.timer.elapsed());
     }

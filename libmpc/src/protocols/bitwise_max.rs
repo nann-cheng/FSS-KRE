@@ -28,10 +28,10 @@ pub async fn bitwise_max(p: &mut MPCParty<BitMaxOffline>, x_bits: &Vec<bool>)->V
         }
     }
 
-    println!("begin to exchange to get t");
+    // println!("begin to exchange to get t");
     /*Line 3: The reveal function for a bunch of bool data*/ 
     let t = p.netlayer.exchange_bool_vec(mask_bits.clone()).await;
-    println!("succeeds to get t");
+    // println!("succeeds to get t");
 
 
     /*Line5-6: v is the number of elements whose prefix is p_{i-1} */
@@ -49,7 +49,7 @@ pub async fn bitwise_max(p: &mut MPCParty<BitMaxOffline>, x_bits: &Vec<bool>)->V
         one_share   
     };//Line6
 
-    println!("v = {}, omega = {}", v_share.to_u32().unwrap(), omega_share.to_u32().unwrap());
+    // println!("v = {}, omega = {}", v_share.to_u32().unwrap(), omega_share.to_u32().unwrap());
     let beavers = &mut p.offlinedata.base.beavers;
     let mut beavers_ctr = 0;
     
