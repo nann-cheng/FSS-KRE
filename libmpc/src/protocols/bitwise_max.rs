@@ -101,7 +101,7 @@ pub async fn bitwise_max(p: &mut MPCParty<BitMaxOffline>, x_bits: &Vec<bool>)->V
 
             let otherMsg = p.netlayer.exchange_byte_vec(&msg.clone()).await;//Perform Network communication
 
-            x_fznc = RingElm::from(&otherMsg[0..4].to_vec());
+            x_fznc = RingElm::from(otherMsg[0..4].to_vec().clone());
             let omega0 = beavers[beavers_ctr].beaver_mul1(is_server, &otherMsg[4..12].to_vec());
             let omega1 = beavers[beavers_ctr+1].beaver_mul1(is_server, &otherMsg[12..20].to_vec());
             beavers_ctr += 2;
