@@ -39,7 +39,7 @@ pub enum TEST_OPTIONS{
 pub const TEST_WAN_NETWORK: bool = true;
 
 //n: input domain length
-const INPUT_BITS: usize = 30usize;
+const INPUT_BITS: usize = 15usize;
 const BATCH_SIZE: usize = 6usize;
 const K_GLOBAL: u32 = 1;
 
@@ -68,7 +68,7 @@ async fn main() {
         eprintln!("No arguments provided.");
     }
 
-    let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_MAX,TEST_OPTIONS::BITWISE_KRE];
+    let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_MAX];
     // let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_MAX,TEST_OPTIONS::BATCH_MAX,TEST_OPTIONS::BITWISE_KRE,TEST_OPTIONS::BATCH_KRE];
     // let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_KRE,TEST_OPTIONS::BATCH_KRE, TEST_OPTIONS::TRIVAL_FSS_KRE];
     for protocol in BENCHMARK_PROTOCOL_TYPES{
