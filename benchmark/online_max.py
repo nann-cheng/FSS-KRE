@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib.ticker import MaxNLocator
 
 # display execuation time figure or communication volume figure
-is_show_time_figure=False
+is_show_time_figure=True
 
 if is_show_time_figure:
     x = [100, 1000, 10000, 100000, 1000000]
