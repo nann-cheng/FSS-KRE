@@ -160,8 +160,8 @@ impl NetInterface{
 
         // println!("current x_msg len is: {:?}", xmsg_len);
 
-        // const MAX_MSG_SIZE:usize = 256000; //250KB
-        const MAX_MSG_SIZE:usize = 5242880; //5MB
+        const MAX_MSG_SIZE:usize = 256000; //250KB
+        // const MAX_MSG_SIZE:usize = 5242880; //5MB
         let slices:usize = (xmsg_len+MAX_MSG_SIZE-1)/MAX_MSG_SIZE;
 
         for i in 0..slices{
@@ -243,8 +243,8 @@ impl NetInterface{
 
 
 
-        // const MAX_MSG_SIZE:usize = 256000; //250KB
-        const MAX_MSG_SIZE:usize = 5242880; //5MB
+        const MAX_MSG_SIZE:usize = 256000; //250KB
+        // const MAX_MSG_SIZE:usize = 5242880; //5MB
 
         let slices:usize = (xmsg_len+MAX_MSG_SIZE-1)/MAX_MSG_SIZE;
 
