@@ -39,7 +39,7 @@ pub enum TEST_OPTIONS{
 pub const TEST_WAN_NETWORK: bool = true;
 
 //n: input domain length
-const INPUT_BITS: usize = 15usize;
+const INPUT_BITS: usize = 30usize;
 const BATCH_SIZE: usize = 6usize;
 const K_GLOBAL: u32 = 1;
 
