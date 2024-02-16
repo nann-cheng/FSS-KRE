@@ -14,7 +14,7 @@ pub async fn max_ic(p: &mut MPCParty<MaxOffline_IC>, x: &Vec<RingElm>) ->RingElm
     let mut alpha_it = p.offlinedata.ic_alpha.iter();
     let mut beaver_it = p.offlinedata.beavers.iter();
     /*Start: Debug info */
-    let x_org = p.netlayer.exchange_ring_vec(x.clone()).await;
+    // let x_org = p.netlayer.exchange_ring_vec(x.clone()).await;
     // println!("start:{:?}", x_org);
     /*End:   Debug info */
     while x_len > 1{
@@ -57,7 +57,7 @@ pub async fn max_ic(p: &mut MPCParty<MaxOffline_IC>, x: &Vec<RingElm>) ->RingElm
         // deal with the last element if x_len is odd
         if x_len & 0x1usize == 1{
             t.push(x_share[x_len-1]);
-        } 
+        }
 
         //update x_share
         x_share.clear();
@@ -79,7 +79,7 @@ pub async fn max_ic(p: &mut MPCParty<MaxOffline_IC>, x: &Vec<RingElm>) ->RingElm
 pub async fn heapify(p: &mut MPCParty<MaxOffline_IC>, x_share: &mut Vec<RingElm>) -> RingElm{
     let x_len = x_share.len();
     /*Start: Debug info */
-    let x_org = p.netlayer.exchange_ring_vec(x_share.clone()).await;
+    // let x_org = p.netlayer.exchange_ring_vec(x_share.clone()).await;
     // println!("start:{:?}", x_org);
     /*End:   Debug info */
     let is_server = p.netlayer.is_server;
@@ -201,7 +201,7 @@ pub async fn heapify(p: &mut MPCParty<MaxOffline_IC>, x_share: &mut Vec<RingElm>
         start_index = (1 << (i - 1)) - 1;
 
         /*Start: Debug info */
-        let x_layer = p.netlayer.exchange_ring_vec(x_share.clone()).await;
+        // let x_layer = p.netlayer.exchange_ring_vec(x_share.clone()).await;
         // println!("layer{}:{:?}", i, x_layer);
         /*End:   Debug info */
     }
@@ -214,7 +214,7 @@ pub async fn heap_sort(p: &mut MPCParty<MaxOffline_IC>, x_share: &mut Vec<RingEl
     let is_server = p.netlayer.is_server;
 
     /*Start: Debug info */
-    let x_org = p.netlayer.exchange_ring_vec(x_share.clone()).await;
+    // let x_org = p.netlayer.exchange_ring_vec(x_share.clone()).await;
     // println!("start:{:?}", x_org);
 
     for heap_cnt in 0..x_length{
@@ -347,7 +347,7 @@ pub async fn heap_sort(p: &mut MPCParty<MaxOffline_IC>, x_share: &mut Vec<RingEl
             x_share[x_len-1] = temp_elem; 
         /*****************************************************************************************************************************/
         /*Start: Debug info */
-        let x_layer = p.netlayer.exchange_ring_vec(x_share.clone()).await;
+        // let x_layer = p.netlayer.exchange_ring_vec(x_share.clone()).await;
         // println!("sort_i{:?}", x_layer);
         // println!("****************end  heapify**********************");
         /*End:   Debug info */
@@ -435,8 +435,8 @@ pub async fn extract_kmax(p: &mut MPCParty<MaxOffline_IC>, x_share: &Vec<RingElm
     }
     /************************************START: step4 compute the inner product of x_share and z_share********************************/
     /***************************Debug Info ****************************/
-    let msg_kmax_share = [kmax_share].to_vec();
-    let msg_kmax = p.netlayer.exchange_ring_vec(msg_kmax_share).await;
+    // let msg_kmax_share = [kmax_share].to_vec();
+    // let msg_kmax = p.netlayer.exchange_ring_vec(msg_kmax_share).await;
     // println!("kmax={:?}", msg_kmax);
     /***************************Debug Info ****************************/
     p.netlayer.print_benchmarking().await;
