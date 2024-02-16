@@ -64,7 +64,7 @@ pub async fn max_ic(p: &mut MPCParty<MaxOffline_IC>, x: &Vec<RingElm>) ->RingElm
         x_share.extend(t.clone());
         x_len = x_share.len();  //an important bug is fixed here. fzhang, 0921
         /*Start: Debug info */
-        let x_layer = p.netlayer.exchange_ring_vec(x_share.clone()).await;
+        // let x_layer = p.netlayer.exchange_ring_vec(x_share.clone()).await;
         // println!("step:{:?}]", x_layer);
         /*End:   Debug info */
     }

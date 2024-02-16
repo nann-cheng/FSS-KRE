@@ -19,3 +19,27 @@ Open two terminals
     - In the 2nd terminal: cargo run --release 1
 
 The results are written in "test", in frontend repo then run "cargo test test_result" to verify the results.
+
+
+<!-- 
+How to run the whole benchmarking from scratch?
+
+1. git clone https://github.com/nann-cheng/FSS-KRE.git
+
+git checkout -b latest
+git branch --set-upstream-to=origin/latest
+
+
+2.(for rustc) apt update
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+3.firewall
+
+apt install ufw
+ufw enable
+
+ufw allow 8088/tcp
+ufw disable
+ufw enable
+
+ -->
