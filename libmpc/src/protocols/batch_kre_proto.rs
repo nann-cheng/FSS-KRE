@@ -11,7 +11,7 @@ use super::tree_eval_of_idpf;
 
 //Assume n % batchsize == 0
 pub async fn batch_kre(p: &mut MPCParty<BatchKreOffline>, x_bits: &Vec<bool>, batch_size: usize, kValue: &RingElm) ->Vec<bool>{
-    let num_threads = 32;
+    let num_threads = 1;
     let pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
     
     let mut k_star = kValue.clone();

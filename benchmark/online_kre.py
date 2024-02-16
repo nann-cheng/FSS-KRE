@@ -6,25 +6,35 @@ from matplotlib.ticker import MaxNLocator
 # display execuation time figure or communication volume figure
 is_show_time_figure=False
 
+
+# what's reported from trivalKre
+# Amount [10,20,30,50]
+# Time: [7.05,18.84,35.65,65.43]
+# Commu: [1184,4364,9544,25904]
+
+# around 5 seconds for bitwise kre
+# [2.46,2.41,2.69,2.69]
+
 if is_show_time_figure:
     x = [100, 1000, 10000, 100000, 1000000]
-    y1 = [2.93, 2.94, 3.03, 3.80, 8.89]#(bitKRE, n=15)
-    y2 = [2.45, 2.48, 2.70, 4.30, 23.4]#(batchKRE, \omega=3)
-    y3 = [5.76, 5.81, 5.97, 6.83, 17.8]#(bitKRE, n=30)
-    y4 = [4.83, 4.87, 5.02, 8.60, 50.75]#(batchKRE, \omega=3)
+    y1 = [2.69, 2.61, 2.85, 3.36, 8.39]#(bitKRE, n=15)
+    y2 = [2.34, 2.29, 2.38, 4.06, 16.71]#(batchKRE, \omega=3)
+
+    y3 = [5.12, 4.95, 5.13, 6.42, 16.07]#(bitKRE, n=30)
+    y4 = [4.43, 4.40, 4.67, 7.32, 34.56]#(batchKRE, \omega=3)
 
     plt.figure(figsize=(5, 2.7), layout='constrained')
 
     # Create scatter plots
-    plt.scatter(x, y1, label='y1 (bitKRE, n=15)', marker='o')
-    plt.scatter(x, y2, label='y2 (batchKRE, ω=3)', marker='x')
-    plt.scatter(x, y3, label='y3 (bitKRE, n=30)', marker='s')
-    plt.scatter(x, y4, label='y4 (batchKRE, ω=3)', marker='d')
+    plt.scatter(x, y1, label='$\Pi_{\mathsf{Kre1}} (n=15)$', marker='o')
+    plt.scatter(x, y2, label='$\Pi_{\mathsf{Kre2}} (n=15, \omega=3)$', marker='x')
+    plt.scatter(x, y3, label='$\Pi_{\mathsf{Kre1}} (n=30)$', marker='s')
+    plt.scatter(x, y4, label='$\Pi_{\mathsf{Kre}} (n=30, \omega=3)$', marker='d')
 
     # Add titles and labels
     # plt.title("Scatter Plot of Data")
     plt.xlabel("Input scale (m)")
-    plt.ylabel("Execution time [s]")
+    plt.ylabel("Computation time [s]")
     plt.xscale("log")  # Optional, to set the x-axis to a logarithmic scale
 
     # Add a legend
@@ -48,15 +58,15 @@ else:
     plt.figure(figsize=(5, 2.7), layout='constrained')
 
     # Create scatter plots
-    plt.scatter(x, y1, label='y1 (bitbitKRE, n=15)', marker='o')
-    plt.scatter(x, y2, label='y2 (batchbitKRE, ω=3)', marker='x')
-    plt.scatter(x, y3, label='y3 (bitbitKRE, n=30)', marker='s')
-    plt.scatter(x, y4, label='y4 (batchbitKRE, ω=3)', marker='d')
+    plt.scatter(x, y1, label='$\Pi_{\mathsf{Kre1}} (n=15)$', marker='o')
+    plt.scatter(x, y2, label='$\Pi_{\mathsf{Kre2}} (n=15, \omega=3)$', marker='x')
+    plt.scatter(x, y3, label='$\Pi_{\mathsf{Kre1}} (n=30)$', marker='s')
+    plt.scatter(x, y4, label='$\Pi_{\mathsf{Kre}} (n=30, \omega=3)$', marker='d')
 
     # Add titles and labels
     # plt.title("Scatter Plot of Data")
     plt.xlabel("Input scale")
-    plt.ylabel("Communication per server[KB]")
+    plt.ylabel("Commu. volume [MB]")
     plt.xscale("log")  # Optional, to set the x-axis to a logarithmic scale
 
     # Add a legend

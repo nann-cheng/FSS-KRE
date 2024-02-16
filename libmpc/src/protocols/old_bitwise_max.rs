@@ -76,52 +76,43 @@ pub async fn bitwise_max(p: &mut MPCParty<BitMaxOffline>, x_bits: &Vec<bool>)->V
         // println!("v0={:?}, v1={:?}", v0_share, v1_share);
         
         /*Exchange five ring_elements in parallel: u_i-w_i-alpha[i], (d_share, e_share) tuples for the two multiplication operation */
-        let x_fznc;
+        let mut msg0  = Vec::<RingElm>::new();        // the send message
+        let mut x_fnzc_share = RingElm::from(0);  //
+        x_fnzc_share.add(&mu_share.lock().unwrap());
+        x_fnzc_share.sub(&omega_share); //compute u_i-w_i, the x value of f_{NonZeroCheck}
+        x_fnzc_share.add(&p.offlinedata.zc_a_share[i]); //mask the x value by alpha 
+        // println!("{:?} x_fznc_share={:?}",i, x_fnzc_share);
+        msg0.push(x_fnzc_share);
+        let rv = p.netlayer.exchange_ring_vec(msg0.clone()).await;
+        let x_fznc = rv[0].clone();
+
+        let mut msg1  = Vec::<u8>::new();        // the send message
+        /*Obtain two beaver tuples and assure the beaver tuples are existing*/
+        let d1_share= v0_share.clone(); //the fisrt v_alpha = v0_share 
+        let d2_share= v1_share.clone(); //the second v_alpha = v0_share 
+        let mut e1_share = if is_server{ RingElm::one() } else{ RingElm::zero() }; //the fisrt v_beta = 1-q[i+1] 
+        let mut e2_share = if is_server{ RingElm::one() } else{ RingElm::zero() }; //the second v_beta = 1-q[i+1]
+
         let omega_t;
-        if i < n-1{//pack the msg used in NZCheck and multiplication together
-            let mut msg  = Vec::<u8>::new();        // the send message
-
-            let mut x_fnzc_share = RingElm::from(0);  //
-            x_fnzc_share.add(&mu_share.lock().unwrap());
-            x_fnzc_share.sub(&omega_share); //compute u_i-w_i, the x value of f_{NonZeroCheck}
-            x_fnzc_share.add(&p.offlinedata.zc_a_share[i]); //mask the x value by alpha 
-            msg.append(&mut x_fnzc_share.to_u8_vec());
-
-            /*Obtain two beaver tuples and assure the beaver tuples are existing*/
-            let d1_share= v0_share.clone(); //the fisrt v_alpha = v0_share 
-            let d2_share= v1_share.clone(); //the second v_alpha = v0_share 
-            let mut e1_share = if is_server{ RingElm::one() } else{ RingElm::zero() }; //the fisrt v_beta = 1-q[i+1] 
-            let mut e2_share = if is_server{ RingElm::one() } else{ RingElm::zero() }; //the second v_beta = 1-q[i+1]
+        if i < n-1{
             //println!("beaver{} {:?} {:?}",i, beavers[beavers_ctr], beavers[beavers_ctr+1]);
             e1_share.sub(&p.offlinedata.base.qa_share[i+1]);
             e2_share.sub(&p.offlinedata.base.qa_share[i+1]);
 
-            msg.append(&mut beavers[beavers_ctr].beaver_mul0(d1_share, e1_share));
-            msg.append(&mut beavers[beavers_ctr+1].beaver_mul0(d2_share, e2_share));
+            msg1.append(&mut beavers[beavers_ctr].beaver_mul0(d1_share, e1_share));
+            msg1.append(&mut beavers[beavers_ctr+1].beaver_mul0(d2_share, e2_share));
 
-            let otherMsg = p.netlayer.exchange_byte_vec(&msg.clone()).await;//Perform Network communication
-
-            x_fznc = RingElm::from(otherMsg[0..4].to_vec().clone());
-            let omega0 = beavers[beavers_ctr].beaver_mul1(is_server, &otherMsg[4..12].to_vec());
-            let omega1 = beavers[beavers_ctr+1].beaver_mul1(is_server, &otherMsg[12..20].to_vec());
+            let otherMsg1 = p.netlayer.exchange_byte_vec(&msg1.clone()).await;//Perform Network communication
+            
+            let omega0 = beavers[beavers_ctr].beaver_mul1(is_server, &otherMsg1[0..8].to_vec());
+            let omega1 = beavers[beavers_ctr+1].beaver_mul1(is_server, &otherMsg1[8..16].to_vec());
             beavers_ctr += 2;
 
             // println!("wo={:?}, w1={:?}", omega0, omega1);
             omega_t = (omega0, omega1);
         }
-        else{//deal with only NZCheck
-            let mut msg0  = Vec::<RingElm>::new(); // the send message
-            let mut x_fnzc_share = RingElm::from(0);  //
-            x_fnzc_share.add(&mu_share.lock().unwrap());
-            x_fnzc_share.sub(&omega_share); //compute u_i-w_i, the x value of f_{NonZeroCheck}
-            x_fnzc_share.add(&p.offlinedata.zc_a_share[i]); //mask the x value by alpha 
-            // println!("{:?} x_fznc_share={:?}",i, x_fnzc_share);
-            msg0.push(x_fnzc_share);
-            let rv = p.netlayer.exchange_ring_vec(msg0.clone()).await;
-            x_fznc = rv[0].clone();
-
-
-            omega_t = (RingElm::from(0), RingElm::from(0));
+        else{
+            omega_t = (RingElm::from(0), RingElm::from(0));    
         } //end else if i < n-1
     
         //start Line 12, calculate the f_{NonZeroCheck}(x_fnzc)
