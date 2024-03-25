@@ -23,7 +23,7 @@ use std::time::Duration;
 
 
 const LAN_ADDRESS: &'static str = "127.0.0.1:8088";
-const WAN_ADDRESS: &'static str = "45.63.6.86:8088";
+const WAN_ADDRESS: &'static str = "192.168.1.1:8088";
 
 #[derive(PartialEq,PartialOrd,Debug)]
 pub enum TEST_OPTIONS{
@@ -39,7 +39,7 @@ pub enum TEST_OPTIONS{
 pub const TEST_WAN_NETWORK: bool = false;
 
 //n: input domain length
-const INPUT_BITS: usize = 32usize;
+const INPUT_BITS: usize = 31usize;
 const BATCH_SIZE: usize = 3usize;
 const K_GLOBAL: u32 = 1;
 
@@ -69,8 +69,13 @@ async fn main() {
     }
 
     // let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_MAX,BATCH_MAX,TRIVAL_FSS_MAX];
+    // let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::TRIVAL_FSS_MAX,TEST_OPTIONS::BITWISE_MAX];
     let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::TRIVAL_FSS_MAX];
+    // let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_MAX];
+    // let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_MAX,TEST_OPTIONS::TRIVAL_FSS_MAX];
     // let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_MAX,TEST_OPTIONS::BATCH_MAX,TEST_OPTIONS::BITWISE_KRE,TEST_OPTIONS::BATCH_KRE];
+    // let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BATCH_KRE];
+    // let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_KRE];
     // let BENCHMARK_PROTOCOL_TYPES:Vec<TEST_OPTIONS> = vec![TEST_OPTIONS::BITWISE_KRE,TEST_OPTIONS::BATCH_KRE, TEST_OPTIONS::TRIVAL_FSS_KRE];
     for protocol in BENCHMARK_PROTOCOL_TYPES{
         println!("Start to test new protocol \n\n\n");
@@ -78,14 +83,19 @@ async fn main() {
 
         let M_TEST_CHOICE: TEST_OPTIONS = protocol;
 
-        let INPUT_PARAMETERS:Vec<usize> = vec![1024*1024];
+        let INPUT_PARAMETERS:Vec<usize> = vec![5000000];
         // let INPUT_PARAMETERS:Vec<usize> = vec![1024,1000,10000,100000,1000000];
-        // let INPUT_PARAMETERS:Vec<usize> = vec![10,30,50,100];
-        // let INPUT_PARAMETERS:Vec<usize> = vec![1000,10000,100000,500000];
+        // let INPUT_PARAMETERS:Vec<usize> = vec![10,50];
+        // let INPUT_PARAMETERS:Vec<usize> = vec![1000,10000,100000,100000];
+        // let INPUT_PARAMETERS:Vec<usize> = vec![10,50,1000,10000,100000,1000000];
         // 10000,100000,500000
         for i in 0..INPUT_PARAMETERS.len(){
             let input_size = INPUT_PARAMETERS[i];
-            gen_offlinedata(&M_TEST_CHOICE, input_size);
+
+            // if is_server{
+                gen_offlinedata(&M_TEST_CHOICE, input_size);
+                    // }
+            
             let seed = if is_server {PrgSeed::zero()} else {PrgSeed::one()};//Guarantee same input bits to ease the debug process
             let mut stream = FixedKeyPrgStream::new();
             stream.set_key(&seed.key);
@@ -103,12 +113,14 @@ async fn main() {
 
             if M_TEST_CHOICE<=TEST_OPTIONS::BATCH_KRE{
                 if M_TEST_CHOICE == TEST_OPTIONS::BITWISE_MAX{
+                    
                         let mut offlinedata = BitMaxOffline::new();
                         offlinedata.loadData(&index_ID);
                         netlayer.reset_timer().await;
                         let mut p: MPCParty<BitMaxOffline> = MPCParty::new(offlinedata, netlayer);
                         p.setup(input_size, INPUT_BITS);
-                        result = bitwise_max(&mut p, &x_share).await;
+                        // result = bitwise_max(&mut p, &x_share).await;
+                        result = bitwise_max_opt(&mut p, &x_share).await;
                 }else if M_TEST_CHOICE == TEST_OPTIONS::BATCH_MAX{
                     let mut offlinedata = BatchMaxOffline::new();
                         offlinedata.loadData(&index_ID);
@@ -180,30 +192,30 @@ fn gen_offlinedata(M_TEST_CHOICE:&TEST_OPTIONS, input_size:usize){
     match M_TEST_CHOICE{
         TEST_OPTIONS::BITWISE_MAX => {
             let offline = BitMaxOffline::new();
-            offline.genData(&PrgSeed::zero(), input_size, INPUT_BITS);
+            offline.genData(&PrgSeed::random(), input_size, INPUT_BITS);
         },
         TEST_OPTIONS::BATCH_MAX => {
             let every_batch_num = 1 << BATCH_SIZE;
             let offline = BatchMaxOffline::new();
-            offline.genData(&PrgSeed::zero(), input_size, INPUT_BITS, BATCH_SIZE, every_batch_num * every_batch_num);
+            offline.genData(&PrgSeed::random(), input_size, INPUT_BITS, BATCH_SIZE, every_batch_num * every_batch_num);
         },
         TEST_OPTIONS::BITWISE_KRE => {
             let offline = BitKreOffline::new();
-            offline.genData(&PrgSeed::zero(), input_size, INPUT_BITS);
+            offline.genData(&PrgSeed::random(), input_size, INPUT_BITS);
         },
         TEST_OPTIONS::BATCH_KRE => {
             let offline = BatchKreOffline::new();
-            offline.genData(&PrgSeed::zero(), input_size, INPUT_BITS, BATCH_SIZE);
+            offline.genData(&PrgSeed::random(), input_size, INPUT_BITS, BATCH_SIZE);
         },
         TEST_OPTIONS::TRIVAL_FSS_MAX => {
-            let seed = PrgSeed::zero();//Guarantee same input bits to ease the debug process
+            let seed = PrgSeed::random();//Guarantee same input bits to ease the debug process
             let mut stream = FixedKeyPrgStream::new();
             stream.set_key(&seed.key);
             MaxOffline_IC::genData(&mut stream, input_size - 1 , input_size-1, 0);
             // MaxOffline_IC::genData(&mut stream, input_size*(input_size - 1) / 2 , input_size * (input_size-1) / 2 + 2 * input_size, input_size);
         },
         TEST_OPTIONS::TRIVAL_FSS_KRE => {
-            let seed = PrgSeed::zero();//Guarantee same input bits to ease the debug process
+            let seed = PrgSeed::random();//Guarantee same input bits to ease the debug process
             let mut stream = FixedKeyPrgStream::new();
             stream.set_key(&seed.key);
             MaxOffline_IC::genData(&mut stream, input_size*(input_size - 1) / 2 , input_size * (input_size-1) / 2 + 2 * input_size, input_size);

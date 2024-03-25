@@ -25,7 +25,7 @@ impl BitMaxOffline{
     }
 
     pub fn genData(&self, seed: &PrgSeed,input_size: usize, input_bits: usize){
-        self.base.genData(&seed,input_size,input_bits, input_bits*2);
+        self.base.genData(&seed,input_size,input_bits, input_bits*4); //for bitwise_max beaver_amount = 2, for bitwise_max_opt beaver_amount = 4
         let mut stream = FixedKeyPrgStream::new();
         stream.set_key(&seed.key);
 
@@ -36,7 +36,7 @@ impl BitMaxOffline{
         let mut zero_dpf_r0: Vec<RingElm> = Vec::new();
         let mut zero_dpf_r1: Vec<RingElm> = Vec::new();
         
-        for _ in 0..input_bits{
+        for _ in 0..2*input_bits{//for bitwise_max generate input_bits zc_key-s and zc_a-s, and for bitwise_max_opt, generate 2*input_bits
             let zero_r_bits = stream.next_bits(NUMERIC_LEN*2);
 
             let mut numeric_zero_r_1 = RingElm::from( bits_to_u32(&zero_r_bits[..NUMERIC_LEN]) );

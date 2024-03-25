@@ -7,7 +7,11 @@ The are a few directories in the solution:
   - libfss: implmentation for used fss primitives, including dpf, idpf, and ic (interval containment) gate.
   - frontend: A frontend for bencharmking all basic protocols in libmpc.
 
+<!-- RUSTFLAGS="-A warnings" -->
+
+RUSTFLAGS="-A warnings" cargo build --release
+
 Open two terminals
-    - cd frontend
-    - In the 1st terminal: cargo run --release 0
-    - In the 2nd terminal: cargo run --release 1
+    - cd frontend/target/release/
+    - In the 1st terminal: sudo ip netns exec ns1 ./target/release/frontend 0
+    - In the 2nd terminal: sudo ip netns exec ns2 ./target/release/frontend 1
