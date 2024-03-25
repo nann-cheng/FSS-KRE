@@ -12,17 +12,17 @@ shape = (10,)
 
 # Note: COU18 online rounds counts the addtion of each secure comparison cost, 
 # along with B2A round, one more round for two multiplication
-y1 = x*(622+1+4*32)/1024**2
+y1 = x*(622+1+2*32)/1024**2
 
 # Note: Damgaard19 online rounds counts the addtion of each secure comparison cost, 
 # along with one more round for two multiplication
-y2 = x*(6*32-8+4*32)/1024**2
-y3 = x*(32+4*32)/1024**2
+y2 = x*(6*32-8+2*32)/1024**2
+y3 = x*(3*32)/1024**2
 y4 = (x*32+max1commuFunc(32))/1024**2
 
-y11 = x*(1286+1+4*64)/1024**2
-y22 = x*(6*64-8+4*64)/1024**2
-y33 = x*(64+4*64)/1024**2
+y11 = x*(1286+1+2*64)/1024**2
+y22 = x*(8*64-8)/1024**2
+y33 = x*(3*64)/1024**2
 y44 = (x*64+max1commuFunc(64))/1024**2
 
 
